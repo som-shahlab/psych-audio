@@ -50,7 +50,7 @@ def transcribe(client: SpeechClient, config: RecognitionConfig, audio_bytes: byt
 
     :param client: Google API speech client.
     :param config: Google API object containing the language, sample rate, etc.
-    :param audio: Bytes object, of length (audio_length_in_sec * 2 * sample rate).
+    :param audio_bytes: Bytes object, of length (audio_length_in_sec * 2 * sample rate).
     :return: transcription: List of tuples (word, speaker id), ordered by when each word occurs.
     """
     print('Waiting for operation to complete...')
@@ -84,6 +84,8 @@ def transcribe(client: SpeechClient, config: RecognitionConfig, audio_bytes: byt
                 confidence,
                 start_time.seconds + start_time.nanos * 1e-9,
                 end_time.seconds + end_time.nanos * 1e-9))
+
+    return result
 
 
 if __name__ == '__main__':
