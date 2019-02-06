@@ -1,17 +1,22 @@
+# -*- coding: utf-8 -*-
 """"
 This script converts our psychotherapy raw audio files (e.g., /share/pi/nigam/psych_audio/)
 into a standardized .flac format. Some features of the standardized data:
 - Single channel (mono)
 - 44.1 kHz sampling rate
-- .flac audio format
+- FLAC audio format: https://en.wikipedia.org/wiki/FLAC
 
-Prerequisites:
-- FFmpeg static binary.
-    FFmpeg contains various audio/visual encoding and decoding formats. To install:
-        1. (Recommended) Download a static binary from: https://johnvansickle.com/ffmpeg/
-        2. Compile from source: https://www.ffmpeg.org/
-    Your FFmpeg binary can be entirely in user-space (i.e., you do not need sudo).
-- Python 3.7 or higher
+How to run this code:
+1. Fill in the correct values for `INPUT_DIR`, `OUTPUT_DIR` and `ffmpeg`.
+2. Run this script.
+    Option 1: Run on single machine (e.g., d01):
+        $ python 01_generate_flac.py --n_threads N
+        Note that ffmpeg inherently attempts to use all threads. We recommend running this script with 1 thread
+        and monitoring CPU usage. If cores are under-utilized, then increase the thread count.
+    Option 2: Run on the nero cluster. First, update `01_slurm.sh` with your requested number of CPUs and/or RAM.
+        $ sbatch 01_slurm.sh
+        To check on the status, run:
+        $ squeue -u <your_sunetid>
 
 Input:
     This script assumes `INPUT_DIR` contains the structure:
@@ -24,6 +29,7 @@ Output:
 import os
 import string
 import argparse
+import subprocess
 import multiprocessing
 from typing import Tuple
 
@@ -31,9 +37,13 @@ from typing import Tuple
 INPUT_DIR = '/share/pi/nigam/psych_audio/raw-audio'
 
 # Location where to place the output files. Directory will be created if already exists.
-OUTPUT_DIR = '/home/akhaque/output'
+OUTPUT_DIR = '/share/pi/nigam/akhaque/flac'
 
 # Path to the ffmpeg static binary. That is, if we execute the string, it launches ffmpeg directly.
+#    FFmpeg contains various audio/visual encoding and decoding formats. To install:
+#        1. (Recommended) Download a static binary and place in home dir: https://johnvansickle.com/ffmpeg/
+#        2. Compile from source: https://www.ffmpeg.org/
+#    Your FFmpeg binary can be entirely in user-space (i.e., you do not need sudo).
 ffmpeg = '/home/akhaque/ffmpeg-4.1-64bit-static/ffmpeg'
 
 
@@ -73,9 +83,12 @@ def worker(item: Tuple[str, str]):
     """
     source_fqn, dest_fqn = item
     # -i = input, -c:a = audio codec, -ac = # output channels, -ar = output sampling rate
-    cmd_template = string.Template(f'{ffmpeg} -i $source -c:a flac -ac 1 -ar 44100 $dest')
+    # Note that Google recommends 16,000 Hz. This is because their models are trained on 16,000.
+    cmd_template = string.Template(f'{ffmpeg} -i $source -c:a flac -ac 1 -ar 16000 $dest')
     cmd = cmd_template.substitute(source=source_fqn, dest=dest_fqn)
-    print(cmd)
+
+    # Execute on command line.
+    subprocess.check_call(cmd.split(' '))
 
 
 if __name__ == '__main__':
