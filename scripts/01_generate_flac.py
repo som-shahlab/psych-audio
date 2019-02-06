@@ -65,6 +65,12 @@ def main(args: argparse.Namespace):
             basename = '.'.join(filename.split('.')[:-1])
             source_fqn = os.path.join(INPUT_DIR, path, filename)  # fqn: Fully-qualified name.
             dest_fqn = os.path.join(OUTPUT_DIR, f'{basename}.flac')
+            # Error handling.
+            if ' ' in source_fqn:
+                raise ValueError(f'Source filename contains spaces. Please remove them: {source_fqn}')
+            # If we're continuing an interrupted job, we should skip any completed files.
+            if args.resume:
+                continue
             workload.append((source_fqn, dest_fqn))
 
     # Create multiple threads.
@@ -93,6 +99,9 @@ def worker(item: Tuple[str, str]):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--n_threads', default=1, type=int)
+    parser.add_argument('--n_threads', default=1, type=int,
+                        help='Number of simultaneous FFmpeg calls. Note, all available threads are always used.')
+    parser.add_argument('--resume', action='store_true',
+                        help='If True, skip files already completed. Useful for resuming an interrupted job.')
     args = parser.parse_args()
     main(args)
