@@ -72,7 +72,7 @@ def transcribe(client: SpeechClient, rc: RecognitionConfig, audio: RecognitionAu
     operation = client.long_running_recognize(rc, audio)
     response = operation.result(timeout=90)
     transcription = response.results[0].alternatives[0]
-    result = MessageToJson(transcription)
+    result = MessageToDict(transcription)
 
     # for result in response.results:
     #     alternative = result.alternatives[0]
