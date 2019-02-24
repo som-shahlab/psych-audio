@@ -1,0 +1,169 @@
+alternatives {
+  transcript: "I\'m good you how was your Christmas yes we were for one week"
+  confidence: 0.836294949054718
+  words {
+    start_time {
+      seconds: 1
+    }
+    end_time {
+      seconds: 2
+      nanos: 700000000
+    }
+    word: "I\'m"
+    confidence: 0.9468961954116821
+    speaker_tag: 1
+  }
+  words {
+    start_time {
+      seconds: 2
+      nanos: 700000000
+    }
+    end_time {
+      seconds: 3
+    }
+    word: "good"
+    confidence: 0.9801790714263916
+    speaker_tag: 1
+  }
+  words {
+    start_time {
+      seconds: 3
+    }
+    end_time {
+      seconds: 3
+      nanos: 200000000
+    }
+    word: "you"
+    confidence: 0.9437462687492371
+    speaker_tag: 1
+  }
+  words {
+    start_time {
+      seconds: 3
+      nanos: 200000000
+    }
+    end_time {
+      seconds: 4
+      nanos: 200000000
+    }
+    word: "how"
+    confidence: 0.7313981056213379
+    speaker_tag: 1
+  }
+  words {
+    start_time {
+      seconds: 4
+      nanos: 200000000
+    }
+    end_time {
+      seconds: 4
+      nanos: 300000000
+    }
+    word: "was"
+    confidence: 0.8944717049598694
+    speaker_tag: 1
+  }
+  words {
+    start_time {
+      seconds: 4
+      nanos: 300000000
+    }
+    end_time {
+      seconds: 4
+      nanos: 400000000
+    }
+    word: "your"
+    confidence: 0.8944719433784485
+    speaker_tag: 1
+  }
+  words {
+    start_time {
+      seconds: 4
+      nanos: 400000000
+    }
+    end_time {
+      seconds: 4
+      nanos: 700000000
+    }
+    word: "Christmas"
+    confidence: 0.8097421526908875
+    speaker_tag: 1
+  }
+  words {
+    start_time {
+      seconds: 4
+      nanos: 700000000
+    }
+    end_time {
+      seconds: 13
+      nanos: 700000000
+    }
+    word: "yes"
+    confidence: 0.9441573023796082
+    speaker_tag: 2
+  }
+  words {
+    start_time {
+      seconds: 13
+      nanos: 700000000
+    }
+    end_time {
+      seconds: 13
+      nanos: 900000000
+    }
+    word: "we"
+    confidence: 0.9876290559768677
+    speaker_tag: 2
+  }
+  words {
+    start_time {
+      seconds: 13
+      nanos: 900000000
+    }
+    end_time {
+      seconds: 14
+    }
+    word: "were"
+    confidence: 0.3872414529323578
+    speaker_tag: 2
+  }
+  words {
+    start_time {
+      seconds: 14
+    }
+    end_time {
+      seconds: 14
+      nanos: 200000000
+    }
+    word: "for"
+    confidence: 0.9472389221191406
+    speaker_tag: 2
+  }
+  words {
+    start_time {
+      seconds: 14
+      nanos: 200000000
+    }
+    end_time {
+      seconds: 14
+      nanos: 300000000
+    }
+    word: "one"
+    confidence: 0.48106324672698975
+    speaker_tag: 2
+  }
+  words {
+    start_time {
+      seconds: 14
+      nanos: 300000000
+    }
+    end_time {
+      seconds: 14
+      nanos: 500000000
+    }
+    word: "week"
+    confidence: 0.9702247381210327
+    speaker_tag: 2
+  }
+}
+language_code: "en-us"
