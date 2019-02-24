@@ -38,15 +38,15 @@ Most of these settings are [recommended](https://cloud.google.com/speech-to-text
 * Sample Rate: 44,100 Hz -> 16,000 Hz
 * Channels: 2 (stereo) -> 1 (mono)
 
-First, open [scripts/01_generate_flac.py](scripts/01_generate_flac.py)
+First, open [preprocessing/01_generate_flac.py](preprocessing/01_generate_flac.py)
 and edit the global variables: `INPUT_DIR`, `OUTPUT_DIR`, and `ffmpeg`. Then, run:
 
 ```bash
-python scripts/01_generate_flac.py
+python preprocessing/01_generate_flac.py
 ```
 
 If running on NERO or other compute cluster, submit your job with
-Slurm (see [scripts/01_slurm.sh](scripts/01_slurm.sh)).:
+Slurm (see [preprocessing/01_slurm.sh](preprocessing/01_slurm.sh)).:
 
 ```bash
 sbatch scripts/01_slurm.sh
@@ -57,7 +57,7 @@ The output flac files will be placed in `OUTPUT_DIR`.
 
 ### 2.3 Upload to Google Cloud
 
-Todo: Upload files to the PHI-safe Google Cloud bucket.
+Once the audio files have been cleaned and standardized, we now upload the files to Google Cloud. It is better to upload the files and have them stored on GCloud to avoid re-uploading in case we need to re-run ASR.
 
 ### 2.4 Speech-to-Text
 
