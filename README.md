@@ -78,9 +78,19 @@ Option 2 is better than Option 1. Specifically, when we wish to tweak our transc
 
 To upload the files, see [gcloud/01_upload.py](gcloud/01_upload.py). Run it with the following command:
 ```bash
-python 
+cd gcloud
+python 01_upload.py DATA_DIR
 ```
+
+where `DATA_DIR` is the folder containing audio files. While running, the script will print the total upload progress.
 
 ### 3.3 Speech-to-Text
 
-Todo: Run ASR on the flac files from the bucket.
+Now that we have a single bucket containing only flac files, we can run transcription and diarization.
+
+```bash
+cd gcloud
+python 02_transcribe.py OUTPUT_DIR
+```
+
+where `OUTPUT_DIR` is your desired *local* folder where to store the json transcription results. This script will also print the transcription progress.

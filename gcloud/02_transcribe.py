@@ -7,7 +7,6 @@ import os
 import json
 import config
 import argparse
-import numpy as np
 from tqdm import tqdm
 from google.cloud import storage
 from google.cloud import speech_v1p1beta1 as speech

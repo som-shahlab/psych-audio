@@ -7,8 +7,8 @@ Prerequisites:
 """
 import os
 import sys
-import argparse
 import config
+import argparse
 from tqdm import tqdm
 from google.cloud import storage
 
