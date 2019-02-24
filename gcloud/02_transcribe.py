@@ -1,13 +1,17 @@
 """
-This script opens a single audio file, sets up the Google API,
-uploads the audio bytes to Google, and returns the
-diarized (speaker-separated) transcription.
+This script processes audio files which already reside in a Google bucket.
+It will loop over all files, transcribe them, and write the json transcription result
+locally, to the machine running this script.
 """
 import os
+import json
 import config
 import argparse
 import numpy as np
+from tqdm import tqdm
+from google.cloud import storage
 from google.cloud import speech_v1p1beta1 as speech
+from google.protobuf.json_format import MessageToJson
 from google.cloud.speech_v1p1beta1 import SpeechClient
 from google.cloud.speech_v1p1beta1.types import RecognitionConfig, RecognitionAudio
 
@@ -18,13 +22,23 @@ def main(args):
     :param args: Argparse argument list.
     :return: None
     """
+    # Check if the output directory exists.
+    if not os.path.exists(args.output_dir):
+        os.makedirs(args.output_dir)
+
+    # List all audio files in the bucket.
+    storage_client = storage.Client()
+    bucket = storage_client.get_bucket(config.BUCKET_NAME)
+    blobs = bucket.list_blobs()
+    # `blobs` is a list of Google blob objects. We need to extract filenames.
+    filenames = [b.name for b in blobs]
+
     # Create a single Google API client and configuration to reuse.
     # For a list of configuration options, see the Google Speech API documentation:
     # https://cloud.google.com/speech-to-text/docs/word-confidence
     client = speech.SpeechClient()
-
-    config = RecognitionConfig(
-        encoding=speech.enums.RecognitionConfig.AudioEncoding.LINEAR16,
+    rc = RecognitionConfig(
+        encoding=speech.enums.RecognitionConfig.AudioEncoding.FLAC,
         sample_rate_hertz=16000,
         language_code='en-US',
         enable_speaker_diarization=True,
@@ -33,61 +47,53 @@ def main(args):
         diarization_speaker_count=2,
     )
 
-    # Load the audio file.
-    speech_file = '../audio16khz.wav'
-    with open(speech_file, 'rb') as audio_file:
-        content = audio_file.read()
-    audio_bytes = RecognitionAudio(content=content)
+    print(f'Transcribing bucket: {config.BUCKET_NAME}')
+    for filename in tqdm(filenames):
+        # Run ASR.
+        audio = RecognitionAudio(uri=f'gs://{config.BUCKET_NAME}/{filename}')
+        ret = transcribe(client, rc, audio)
 
-    ret = transcribe(client, config, audio_bytes)
+        # Save the output to json.
+        output_fqn = os.path.join(args.output_dir, filename.replace('.flac', '.json'))
+        with open(output_fqn, 'w') as pointer:
+            json.dump(ret, pointer, indent=2, separators=(',', ': '))
+        print(output_fqn)
 
 
-def transcribe(client: SpeechClient, config: RecognitionConfig, audio_bytes: bytes):
+def transcribe(client: SpeechClient, rc: RecognitionConfig, audio: RecognitionAudio):
     """
-    Makes the API call to transcribe `audio_bytes`.
+    Makes the API call to transcribe `audio`.
 
     :param client: Google API speech client.
-    :param config: Google API object containing the language, sample rate, etc.
-    :param audio_bytes: Bytes object, of length (audio_length_in_sec * 2 * sample rate).
-    :return: transcription: List of tuples (word, speaker id), ordered by when each word occurs.
+    :param rc: Google API object containing the language, sample rate, etc.
+    :param audio: Google RecognitionAudio object. This refers to a blob in a google storage bucket.
+    :return result: Dictionary of transcription results.
     """
-    print('Waiting for operation to complete...')
-    operation = client.long_running_recognize(config, audio_bytes)
-    result = operation.result(timeout=90)
+    operation = client.long_running_recognize(rc, audio)
+    response = operation.result(timeout=90)
+    transcription = response.results[0].alternatives[0]
+    result = MessageToJson(transcription)
 
-    # print('Waiting for operation to complete...')
-    # response = client.recognize(config, audio_bytes)
-    # # The transcript within each result is separate and sequential per result.
-    # # However, the words list within an alternative includes all the words
-    # # from all the results thus far. Thus, to get all the words with speaker
-    # # tags, you only have to take the words list from the last result:
-    # result = response.results[-1]
-    #
-    # words_info = result.alternatives[0].words
-    # transcript = result.alternativesre
+    # for result in response.results:
+    #     alternative = result.alternatives[0]
+    #     result_json = MessageToJson(response)
 
-    for result in result.results:
-        alternative = result.alternatives[0]
-        print(u'Transcript: {}'.format(alternative.transcript))
-        print('Confidence: {}'.format(alternative.confidence))
+    #     print(u'Transcript: {}'.format(alternative.transcript))
+    #     print('Confidence: {}'.format(alternative.confidence))
 
-        # For each word, print the results.
-        for word_info in alternative.words:
-            word = word_info.word
-            start_time = word_info.start_time
-            end_time = word_info.end_time
-            confidence = word_info.confidence
-            print('Word: {}, conf: {}, start_time: {}, end_time: {}'.format(
-                word,
-                confidence,
-                start_time.seconds + start_time.nanos * 1e-9,
-                end_time.seconds + end_time.nanos * 1e-9))
+    #     # For each word, print the results.
+    #     for word_info in alternative.words:
+    #         word = word_info.word
+    #         start_time = word_info.start_time
+    #         end_time = word_info.end_time
+    #         confidence = word_info.confidence
 
     return result
 
 
 if __name__ == '__main__':
-    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = config.key
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = config.KEY
     parser = argparse.ArgumentParser()
+    parser.add_argument('--output_dir', type=str, required=True, help='Location for the transcription output.')
     args = parser.parse_args()
     main(args)
