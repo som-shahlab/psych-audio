@@ -11,7 +11,7 @@ import numpy as np
 from tqdm import tqdm
 from google.cloud import storage
 from google.cloud import speech_v1p1beta1 as speech
-from google.protobuf.json_format import MessageToJson
+from google.protobuf.json_format import MessageToDict
 from google.cloud.speech_v1p1beta1 import SpeechClient
 from google.cloud.speech_v1p1beta1.types import RecognitionConfig, RecognitionAudio
 
@@ -47,7 +47,8 @@ def main(args):
         diarization_speaker_count=2,
     )
 
-    print(f'Transcribing bucket: {config.BUCKET_NAME}')
+    print(f'Saving json output to: {args.output_dir}')
+    print(f'Transcribing {len(filenames)} files from bucket: {config.BUCKET_NAME}')
     for filename in tqdm(filenames):
         # Run ASR.
         audio = RecognitionAudio(uri=f'gs://{config.BUCKET_NAME}/{filename}')
@@ -57,7 +58,6 @@ def main(args):
         output_fqn = os.path.join(args.output_dir, filename.replace('.flac', '.json'))
         with open(output_fqn, 'w') as pointer:
             json.dump(ret, pointer, indent=2, separators=(',', ': '))
-        print(output_fqn)
 
 
 def transcribe(client: SpeechClient, rc: RecognitionConfig, audio: RecognitionAudio):
@@ -71,8 +71,8 @@ def transcribe(client: SpeechClient, rc: RecognitionConfig, audio: RecognitionAu
     """
     operation = client.long_running_recognize(rc, audio)
     response = operation.result(timeout=90)
-    transcription = response.results[0].alternatives[0]
-    result = MessageToDict(transcription)
+    # transcription = response.results[0].alternatives[0]
+    result = MessageToDict(response)
 
     # for result in response.results:
     #     alternative = result.alternatives[0]
