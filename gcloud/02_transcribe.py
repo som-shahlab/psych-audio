@@ -71,23 +71,7 @@ def transcribe(client: SpeechClient, rc: RecognitionConfig, audio: RecognitionAu
     """
     operation = client.long_running_recognize(rc, audio)
     response = operation.result(timeout=90)
-    # transcription = response.results[0].alternatives[0]
     result = MessageToDict(response)
-
-    # for result in response.results:
-    #     alternative = result.alternatives[0]
-    #     result_json = MessageToJson(response)
-
-    #     print(u'Transcript: {}'.format(alternative.transcript))
-    #     print('Confidence: {}'.format(alternative.confidence))
-
-    #     # For each word, print the results.
-    #     for word_info in alternative.words:
-    #         word = word_info.word
-    #         start_time = word_info.start_time
-    #         end_time = word_info.end_time
-    #         confidence = word_info.confidence
-
     return result
 
 

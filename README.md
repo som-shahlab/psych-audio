@@ -11,7 +11,7 @@ We perform automatic transcription using publicly available cloud-based transcri
 services and analyze their performance compared to gold standard
 transcriptions by humans. Our analysis includes techniques from natural language processing.
 
-## 2 Speech-to-Text with Google Cloud
+## 2 Data Pre-Processing
 
 ### 2.1 Prerequisites
  [FFmpeg](https://www.ffmpeg.org/) contains various audio/visual
@@ -55,10 +55,32 @@ squeue
 
 The output flac files will be placed in `OUTPUT_DIR`.
 
-### 2.3 Upload to Google Cloud
+## 3 Speech-to-Text with Google Cloud
 
-Once the audio files have been cleaned and standardized, we now upload the files to Google Cloud. It is better to upload the files and have them stored on GCloud to avoid re-uploading in case we need to re-run ASR.
+### 3.1 Prerequisites
+First, enter your GCloud key and bucket information in [gcloud/config.py](gcloud/config.py).
 
-### 2.4 Speech-to-Text
+- **Google Cloud API Key**. This should be a *service account*. The key should have permissions to Google Cloud storage and Google Speech-to-Text API. Easiest but not-security-recommended solution would grant the service account with *Project Owner* status/permissions.
+- **Bucket Name**. This bucket should already exist. Our script will not create a bucket. The files will be uploaded to this bucket.
+
+Second, install the python dependencies.
+```bash
+pip install -r requirements.txt
+```
+
+### 3.2 Upload to Google Cloud
+
+Once the audio files have been cleaned and standardized, we now upload the files to Google Cloud. We have two options:
+1. We send the audio file to Google for each transcription request. Nothing will reside long-term on GCloud.
+2. Before transcription, we upload all audio files to GCloud as a one-time operation. These files may sit there for a while. The transcription script will point to these files.
+
+Option 2 is better than Option 1. Specifically, when we wish to tweak our transcription algorithm or model. With option 2, we do not need to continually re-upload (temporarily) each audio file.
+
+To upload the files, see [gcloud/01_upload.py](gcloud/01_upload.py). Run it with the following command:
+```bash
+python 
+```
+
+### 3.3 Speech-to-Text
 
 Todo: Run ASR on the flac files from the bucket.
