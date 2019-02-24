@@ -13,7 +13,7 @@ from tqdm import tqdm
 from google.cloud import storage
 
 # Audio source directory. Contains data to upload to the cloud.
-DATA_DIR = '/home/ahaque/Github/psych-audio/data'
+DATA_DIR = '../data'
 
 
 def main():
