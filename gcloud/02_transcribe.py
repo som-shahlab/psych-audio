@@ -4,14 +4,12 @@ uploads the audio bytes to Google, and returns the
 diarized (speaker-separated) transcription.
 """
 import os
+import config
 import argparse
 import numpy as np
 from google.cloud import speech_v1p1beta1 as speech
 from google.cloud.speech_v1p1beta1 import SpeechClient
 from google.cloud.speech_v1p1beta1.types import RecognitionConfig, RecognitionAudio
-
-# To access the Google API, we need an API key. Specify the path to the json file here.
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '../c764f05ffbcb.json'
 
 
 def main(args):
@@ -89,6 +87,7 @@ def transcribe(client: SpeechClient, config: RecognitionConfig, audio_bytes: byt
 
 
 if __name__ == '__main__':
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = config.key
     parser = argparse.ArgumentParser()
     args = parser.parse_args()
     main(args)
