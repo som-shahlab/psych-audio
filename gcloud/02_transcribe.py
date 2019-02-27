@@ -69,7 +69,7 @@ def transcribe(client: SpeechClient, rc: RecognitionConfig, audio: RecognitionAu
     :return result: Dictionary of transcription results.
     """
     operation = client.long_running_recognize(rc, audio)
-    response = operation.result(timeout=90)
+    response = operation.result()
     result = MessageToDict(response)
     return result
 
@@ -77,6 +77,6 @@ def transcribe(client: SpeechClient, rc: RecognitionConfig, audio: RecognitionAu
 if __name__ == '__main__':
     os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = config.KEY
     parser = argparse.ArgumentParser()
-    parser.add_argument('--output_dir', type=str, required=True, help='Location for the transcription output.')
+    parser.add_argument('output_dir', type=str, help='Location for the transcription output.')
     args = parser.parse_args()
     main(args)
