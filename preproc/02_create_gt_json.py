@@ -5,6 +5,7 @@ into a structured JSON format, matching the Google Speech API format.
 import os
 import re
 import sys
+import json
 import pprint
 import argparse
 import numpy as np
@@ -30,9 +31,14 @@ def main(args):
 
     # Create the audio filename to has mapping.
     audio2hash = create_audio2hash_map(meta)
-
-    # Check if any GT files map to multiple audio files.
-    convert_ground_truths_to_json(audio2hash, gt_dir)
+    trans_filenames = os.listdir(gt_dir)
+    for filename in tqdm(trans_filenames):
+        audio_filename, results = gt2dict(os.path.join(gt_dir, filename))
+        hash = audio2hash[audio_filename]
+        out_fqn = os.path.join(args.output_dir, f'{hash}.json')
+        with open(out_fqn, 'w') as f:
+            json.dump(results, f, indent=2, separators=(',', ': '))
+        print(out_fqn)
 
 
 def create_audio2hash_map(meta: DataFrame) -> Dict[str, str]:
@@ -61,19 +67,6 @@ def create_audio2hash_map(meta: DataFrame) -> Dict[str, str]:
     return mapping
 
 
-def convert_ground_truths_to_json(audio2hash: Dict[str, str], gt_dir: str):
-    """
-    Converts a folder containing TXT ground truth transcriptions into a folder of JSON files.
-
-    :param audio2hash: Mapping from audio filename to hash.
-    :param gt_dir: Directory containing TXT files.
-    """
-    trans_filenames = os.listdir(gt_dir)
-    for filename in tqdm(trans_filenames):
-        audio_filename, result = gt2dict(os.path.join(gt_dir, filename))
-        hash = audio2hash[audio_filename]
-
-
 def gt2dict(trans_fqn: str) -> (str, Dict):
     """
     Converts a ground truth human transcription file in the format:
@@ -91,7 +84,7 @@ def gt2dict(trans_fqn: str) -> (str, Dict):
     lines = [x.strip() for x in lines]  # Remove newlines.
 
     audio_filename = None
-    result = {}
+    results = []
     for line_no, line in enumerate(lines):
         # First four lines are header data.
         # First line is in the format: `Audio filename: XXX` where XXX is a variable-length audio filename.
@@ -113,21 +106,23 @@ def gt2dict(trans_fqn: str) -> (str, Dict):
                 time_str, text = phrase
                 mm, ss = get_mmss_from_time(time_str)
                 ts = f'{mm * 60 + ss}.000s'
-                words = text.split(' ')
-                words_label = [{'startTime': ts, 'word': x} for x in words]
+                words = []
+                for x in text.split(' '):
+                    if len(x) > 0:
+                        words.append(x)
+                words_label = [{'startTime': ts, 'word': x, 'speakerTag': speaker_id} for x in words]
 
                 label = {
-                    'alternatives': {
+                    'alternatives': [{
                         'transcript': text,
                         'words': words_label,
-                        'speakerTag': speaker_id,
-                    }
+                    }],
+                    'languageCode': 'en-us'
                 }
-                pp = pprint.PrettyPrinter(indent=4)
-                pp.pprint(label)
+                results.append(label)
 
-
-    return audio_filename, result
+    results = {'results': results}
+    return audio_filename, results
 
 
 def get_subphrases(line: str) -> List[Tuple[str, str]]:
@@ -248,6 +243,7 @@ def metadata_file_is_clean(fqn: str) -> bool:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('output_dir', type=str, help='Location to store the output JSON files.')
     parser.add_argument('--no_meta_check', action='store_true', help='Used for code development only.')
     args = parser.parse_args()
     main(args)
