@@ -54,6 +54,7 @@ def remove_extension(filename: str) -> str:
     :param filename: Filename to parse.
     :return: Filename but without the extension.
     """
-    for ext in ['.wma', '.WMA', '.mp3', '.MP3']:
+    for ext in ['.wma', '.mp3', '.wav']:
         filename = filename.replace(ext, '')
+        filename = filename.replace(ext.upper(), '')
     return filename

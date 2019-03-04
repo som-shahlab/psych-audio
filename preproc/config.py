@@ -17,3 +17,8 @@ raw_audio_dir: str = '/vol0/psych_audio/raw-audio'
 #        2. Compile from source: https://www.ffmpeg.org/
 #    Your FFmpeg binary can be entirely in user-space (i.e., you do not need sudo).
 ffmpeg = '/vol0/psych_audio/ahaque/ffmpeg/ffmpeg'
+
+# List of malformed mp3 or wma files. These are unable to be processed by ffmpeg.
+malformed_files = [
+    'S1_061402_P2_10.27.16',
+]

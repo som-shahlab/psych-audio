@@ -31,6 +31,9 @@ def main(args):
             pass
         else:
             filename = util.remove_extension(os.path.basename(path))
+            if filename in config.malformed_files:
+                print(f'Skipping malformed: {filename}')
+                continue
             source_fqn = os.path.join(args.input_dir, f'{filename}.flac')
             dest_fqn = os.path.join(args.output_dir, f'{hash}.flac')
             shutil.copy(source_fqn, dest_fqn)
