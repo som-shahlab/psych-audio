@@ -5,33 +5,31 @@ into a structured JSON format, matching the Google Speech API format.
 import os
 import re
 import json
+import config
 import argparse
 import pandas as pd
 from typing import Dict, Tuple, List
 from tqdm import tqdm
 from pandas import DataFrame
 
-meta_fqn = '/vol0/psych_audio/jasa_format/metadata.tsv'
-gt_dir = '/vol0/psych_audio/gold-transcripts/gold-final'
-
 
 def main(args):
     # Ensure the metadata file is valid.
     if not args.no_meta_check:
-        if not metadata_file_is_clean(meta_fqn):
-            print(f'File contains errors: {meta_fqn}')
+        if not metadata_file_is_clean(config.meta_fqn):
+            print(f'File contains errors: {config.meta_fqn}')
             return
         else:
             print('Metadata file OK.')
 
-    meta = pd.read_csv(meta_fqn, sep='\t')
+    meta = pd.read_csv(config.meta_fqn, sep='\t')
 
     # Create the audio filename to has mapping.
     audio2hash = create_audio2hash_map(meta)
-    trans_filenames = sorted(os.listdir(gt_dir))
+    trans_filenames = sorted(os.listdir(config.gt_dir))
     for filename in tqdm(trans_filenames):
         if filename == '.DS_Store': continue
-        audio_filenames, results = gt2dict(os.path.join(gt_dir, filename))
+        audio_filenames, results = gt2dict(os.path.join(config.gt_dir, filename))
 
         # Some transcription filenames have two or more audio files associated with them.
         # We need to check which hash actually works.
@@ -172,7 +170,7 @@ def get_subphrases(line: str) -> List[Tuple[str, str]]:
     if len(meta) == 1:
         start, end = meta[0]
         ts, text = line[start:end], line[end:]
-        item = (ts, text)
+        item = (ts, canonicalize(text))
         subphrases.append(item)
     elif len(meta) > 1:
         # Extract the text for the subphrase.
@@ -187,7 +185,7 @@ def get_subphrases(line: str) -> List[Tuple[str, str]]:
                 next_idx, next_size = meta[i + 1]
                 text = line[text_start:next_idx]
 
-            item = (ts, text)
+            item = (ts, canonicalize(text))
             subphrases.append(item)
 
     return subphrases
