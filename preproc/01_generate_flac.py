@@ -58,7 +58,8 @@ def main(args: argparse.Namespace):
                 source_fqn = source_fqn.replace(' ', '\\ ')
             # If we're continuing an interrupted job, we should skip any completed files.
             if args.resume:
-                continue
+                if os.path.exists(dest_fqn):
+                    continue
             workload.append((source_fqn, dest_fqn))
 
     print(f'Found {len(workload)} files.')
