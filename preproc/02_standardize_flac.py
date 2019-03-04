@@ -28,6 +28,7 @@ def main(args):
             continue
         elif ';' in path:
             # We have 2 paths. Need to concat.
+            # TODO: Need to implement.
             pass
         else:
             filename = util.remove_extension(os.path.basename(path))
@@ -36,6 +37,8 @@ def main(args):
                 continue
             source_fqn = os.path.join(args.input_dir, f'{filename}.flac')
             dest_fqn = os.path.join(args.output_dir, f'{hash}.flac')
+            if os.path.exists(dest_fqn):
+                continue
             shutil.copy(source_fqn, dest_fqn)
             print(source_fqn, dest_fqn)
 

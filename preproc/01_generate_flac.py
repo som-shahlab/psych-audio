@@ -53,9 +53,6 @@ def main(args: argparse.Namespace):
             basename = '.'.join(filename.split('.')[:-1])
             source_fqn = os.path.join(config.raw_audio_dir, path, filename)  # fqn: Fully-qualified name.
             dest_fqn = os.path.join(args.output_dir, f'{basename}.flac')
-            # Handle spaces in the filename accordingly.
-            if ' ' in source_fqn:
-                source_fqn = source_fqn.replace(' ', '\\ ')
             # If we're continuing an interrupted job, we should skip any completed files.
             if args.resume:
                 if os.path.exists(dest_fqn):
@@ -82,7 +79,7 @@ def worker(item: Tuple[str, str]):
     # -i = input, -c:a = audio codec, -ac = # output channels, -ar = output sampling rate
     # Note that Google recommends 16,000 Hz. This is because their models are trained on 16,000.
     # Anything higher (e.g. 44kHz) significantly increases the filesize without any performance gains.
-    cmd_template = string.Template(f'{config.ffmpeg} -i $source -c:a flac -ac 1 -ar 16000 $dest')
+    cmd_template = string.Template(f'{config.ffmpeg} -i \"$source\" -c:a flac -ac 1 -ar 16000 \"$dest\"')
     cmd = cmd_template.substitute(source=source_fqn, dest=dest_fqn)
 
     # Execute on command line.
