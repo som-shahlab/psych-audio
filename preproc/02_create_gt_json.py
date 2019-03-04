@@ -14,7 +14,7 @@ from typing import Dict, Tuple, List
 from tqdm import tqdm
 from pandas import DataFrame
 
-meta_fqn = '/vol0/psych_audio/standard_data/metadata.tsv'
+meta_fqn = '/vol0/psych_audio/jasa_format/metadata.tsv'
 gt_dir = '/vol0/psych_audio/gold-transcripts/gold-final'
 
 
@@ -31,14 +31,32 @@ def main(args):
 
     # Create the audio filename to has mapping.
     audio2hash = create_audio2hash_map(meta)
-    trans_filenames = os.listdir(gt_dir)
+    trans_filenames = sorted(os.listdir(gt_dir))
     for filename in tqdm(trans_filenames):
-        audio_filename, results = gt2dict(os.path.join(gt_dir, filename))
-        hash = audio2hash[audio_filename]
+        if filename == '.DS_Store': continue
+        audio_filenames, results = gt2dict(os.path.join(gt_dir, filename))
+
+        # Some transcription filenames have two or more audio files associated with them.
+        # We need to check which hash actually works.
+        if len(audio_filenames) == 1:
+            x = audio_filenames[0]
+            if x not in audio2hash:
+                print(f'Audio file not in hash: {x} {filename}')
+                continue
+            hash = audio2hash[x]
+        else:
+            hash = None
+            for x in audio_filenames:
+                if x in audio2hash:
+                    hash = audio2hash[x]
+                    break
+        if hash is None:
+            print(f'Transcription file lists invalid audio: {filename}')
+            return
+
         out_fqn = os.path.join(args.output_dir, f'{hash}.json')
         with open(out_fqn, 'w') as f:
             json.dump(results, f, indent=2, separators=(',', ': '))
-        print(out_fqn)
 
 
 def create_audio2hash_map(meta: DataFrame) -> Dict[str, str]:
@@ -60,14 +78,14 @@ def create_audio2hash_map(meta: DataFrame) -> Dict[str, str]:
 
         for path in paths:
             filename = os.path.basename(path)
-            for ext in ['.wma', '.WMA', 'mp3', '.MP3']:
+            for ext in ['.wma', '.WMA', '.mp3', '.MP3']:
                 filename = filename.replace(ext, '')
             mapping[filename] = hash
 
     return mapping
 
 
-def gt2dict(trans_fqn: str) -> (str, Dict):
+def gt2dict(trans_fqn: str) -> (List[str], Dict):
     """
     Converts a ground truth human transcription file in the format:
         X [TIME: MM:SS] Transcribed sentence containing various words like this.
@@ -83,23 +101,22 @@ def gt2dict(trans_fqn: str) -> (str, Dict):
         lines = f.readlines()
     lines = [x.strip() for x in lines]  # Remove newlines.
 
-    audio_filename = None
+    audio_filenames = None
     results = []
     for line_no, line in enumerate(lines):
         # First four lines are header data.
         # First line is in the format: `Audio filename: XXX` where XXX is a variable-length audio filename.
-        if line_no == 0:
-            audio_filename = line.replace('Audio filename: ', '')
-        elif line_no == 1 and 'Transcript filename:' not in line \
-                or line_no == 2 and 'Therapist (T) gender:' not in line \
-                or line_no == 3 and 'Patient (P) gender:' not in line:
-            print(f'Malformed transcript file, line {line_no+1}: {trans_fqn}')
-            return
-        elif line_no == 4:
-            continue
-        elif line_no >= 5:
+        if line_no == 0 and 'audio' in line.lower():
+            # Find start index of the filename.
+            idx = line.find(':') + 1
+            stripped_line = line[idx:].strip()
+            if ' ' in stripped_line:
+                audio_filenames = stripped_line.split(' ')
+            else:
+                audio_filenames = [stripped_line]
+        elif '[TIME:' in line:
             # Extract the speaker ID and time.
-            speaker_id = line[0]
+            speaker_id = line[0].upper()
             subphrases = get_subphrases(line)
 
             for phrase in subphrases:
@@ -122,7 +139,7 @@ def gt2dict(trans_fqn: str) -> (str, Dict):
                 results.append(label)
 
     results = {'results': results}
-    return audio_filename, results
+    return audio_filenames, results
 
 
 def get_subphrases(line: str) -> List[Tuple[str, str]]:
