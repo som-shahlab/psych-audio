@@ -4,11 +4,8 @@ into a structured JSON format, matching the Google Speech API format.
 """
 import os
 import re
-import sys
 import json
-import pprint
 import argparse
-import numpy as np
 import pandas as pd
 from typing import Dict, Tuple, List
 from tqdm import tqdm
@@ -127,8 +124,9 @@ def gt2dict(trans_fqn: str) -> (List[str], Dict):
                 for x in text.split(' '):
                     if len(x) > 0:
                         words.append(x)
-                words_label = [{'startTime': ts, 'word': x, 'speakerTag': speaker_id} for x in words]
 
+                # Compose the JSON entries.
+                words_label = [{'startTime': ts, 'word': x, 'speakerTag': speaker_id} for x in words]
                 label = {
                     'alternatives': [{
                         'transcript': text,
@@ -211,8 +209,14 @@ def get_mmss_from_time(text: str) -> (int, int):
     return minute, seconds
 
 
-def clean_up_transcript(text: str):
-    pass
+def canonicalize(text: str):
+    """
+    TODO: Canonicalizes the input text.
+
+    :param text:
+    :return: The cleaned up text.
+    """
+    return text
 
 
 def metadata_file_is_clean(fqn: str) -> bool:
