@@ -2,3 +2,6 @@ tqdm>=4.31.1
 google-cloud>=0.34.0
 soundfile>=0.10.2
 librosa>=0.6.3
+google-api-python-client>=1.7.8
+google-cloud-storage>=1.14.0
+google-cloud-speech>=0.36.3
