@@ -1,2 +1,4 @@
 tqdm>=4.31.1
 google-cloud>=0.34.0
+soundfile>=0.10.2
+librosa>=0.6.3

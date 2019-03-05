@@ -7,7 +7,10 @@ Make sure to have finsihed running `preproc/01_generate_flac.py` before running 
 """
 import os
 import shutil
+import librosa
 import argparse
+import soundfile
+import numpy as np
 import pandas as pd
 import util
 import config
@@ -21,15 +24,24 @@ def main(args):
         hash = row['hash']
         path = str(row['audio_path'])
 
-        if ' ' in path:
-            print('Found space in file')
-
         if path == 'nan':
             continue
         elif ';' in path:
             # We have 2 paths. Need to concat.
-            # TODO: Need to implement.
-            pass
+            paths = path.split(';')
+            wavs = []
+            # Load each of the audio files.
+            for path in paths:
+                filename = util.remove_extension(os.path.basename(path))
+                fqn = os.path.join(args.input_dir, f'{filename}.flac')
+                print(f'\t{fqn}')
+                y, _ = librosa.load(fqn, sr=16000)
+                wavs.append(y)
+            # Concat into a single vector.
+            new_wav = np.hstack(tuple(wavs))
+            out_fqn = os.path.join(args.output_dir, f'{hash}.flac')
+            soundfile.write(out_fqn, new_wav, 16000, format='flac', subtype='PCM_24')
+            print('\t\t{out_fqn}')
         else:
             filename = util.remove_extension(os.path.basename(path))
             if filename in config.malformed_files:
