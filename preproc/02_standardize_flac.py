@@ -3,21 +3,25 @@ This script takes existing flac files and standardizes them according
 to our metadata tsv file. This includes joining multiple flac files into
 a single audio file (e.g., a single therapy session was split into two audio files).
 
-Make sure to have finsihed running `preproc/01_generate_flac.py` before running this script.
+Make sure to have finished running `preproc/01_generate_flac.py` before running this script.
 """
 import os
 import shutil
-import librosa
+import string
 import argparse
-import soundfile
-import numpy as np
+import subprocess
 import pandas as pd
 import util
 import config
 
 
 def main(args):
+    # Maintains the original filename -> hashed filename mapping.
     meta = pd.read_csv(config.meta_fqn, sep='\t')
+
+    # Used for concating two files.
+    cmd_template = string.Template('ffmpeg -i \"$infile1\" -i \"$infile2\" -c:a flac -ac 1 -ar 16000 '
+                                   '-filter_complex \'[0:0][1:0]concat=n=2:v=0:a=1[out]\' -map \'[out]\' $outfile')
 
     # For each metadata row, copy and rename the audio file.
     for i, row in meta.iterrows():
@@ -26,23 +30,26 @@ def main(args):
 
         if path == 'nan':
             continue
+        # Handle the case where we need to concat two files.
         elif ';' in path:
+            out_fqn = os.path.join(args.output_dir, f'{hash}.flac')
+            if os.path.exists(out_fqn):
+                continue
+
             # We have 2 paths. Need to concat.
             paths = path.split(';')
-            wavs = []
-            # Load each of the audio files.
-            for path in paths:
+            input_files = []
+            for i, path in enumerate(paths):
                 filename = util.remove_extension(os.path.basename(path))
                 fqn = os.path.join(args.input_dir, f'{filename}.flac')
-                print(f'\t{fqn}')
-                y, _ = librosa.load(fqn, sr=16000)
-                wavs.append(y)
-            # Concat into a single vector.
-            new_wav = np.hstack(tuple(wavs))
-            out_fqn = os.path.join(args.output_dir, f'{hash}.flac')
-            soundfile.write(out_fqn, new_wav, 16000, format='flac', subtype='PCM_24')
-            print('\t\t{out_fqn}')
+                input_files.append(fqn)
+
+            assert(len(input_files) == 2)
+            cmd = cmd_template.substitute(infile1=input_files[0], infile2=input_files[1], outfile=out_fqn)
+            subprocess.run(cmd, shell=True)
+            print(f'(Concat) {out_fqn}')
         else:
+            # Handle the case where there's only one file. Simply copy it to our target directory.
             filename = util.remove_extension(os.path.basename(path))
             if filename in config.malformed_files:
                 print(f'Skipping malformed: {filename}')
@@ -57,9 +64,7 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('input_dir', type=str,
-                        help='Directory which contains all flac files.')
-    parser.add_argument('output_dir', type=str,
-                        help='Location to place the new flac files.')
+    parser.add_argument('input_dir', type=str, help='Directory which contains all flac files.')
+    parser.add_argument('output_dir', type=str, help='Location to place the new flac files.')
     args = parser.parse_args()
     main(args)

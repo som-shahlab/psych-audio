@@ -83,7 +83,7 @@ def worker(item: Tuple[str, str]):
     cmd = cmd_template.substitute(source=source_fqn, dest=dest_fqn)
 
     # Execute on command line.
-    subprocess.check_call(cmd.split(' '))
+    subprocess.run(cmd, shell=True)
 
 
 if __name__ == '__main__':
