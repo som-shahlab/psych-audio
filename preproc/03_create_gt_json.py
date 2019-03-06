@@ -10,28 +10,27 @@ import pandas as pd
 from typing import Dict, Tuple, List
 from tqdm import tqdm
 from pandas import DataFrame
-
-meta_fqn = '/vol0/psych_audio/jasa_format/metadata.tsv'
-gt_dir = '/vol0/psych_audio/gold-transcripts/gold-final'
+import util
+import config
 
 
 def main(args):
     # Ensure the metadata file is valid.
     if not args.no_meta_check:
-        if not metadata_file_is_clean(meta_fqn):
-            print(f'File contains errors: {meta_fqn}')
+        if not util.metadata_file_is_clean(config.meta_fqn):
+            print(f'File contains errors: {config.meta_fqn}')
             return
         else:
             print('Metadata file OK.')
 
-    meta = pd.read_csv(meta_fqn, sep='\t')
+    meta = pd.read_csv(config.meta_fqn, sep='\t')
 
     # Create the audio filename to has mapping.
     audio2hash = create_audio2hash_map(meta)
-    trans_filenames = sorted(os.listdir(gt_dir))
+    trans_filenames = sorted(os.listdir(config.gt_dir))
     for filename in tqdm(trans_filenames):
         if filename == '.DS_Store': continue
-        audio_filenames, results = gt2dict(os.path.join(gt_dir, filename))
+        audio_filenames, results = gt2dict(os.path.join(config.gt_dir, filename))
 
         # Some transcription filenames have two or more audio files associated with them.
         # We need to check which hash actually works.
@@ -74,9 +73,7 @@ def create_audio2hash_map(meta: DataFrame) -> Dict[str, str]:
         hash = row['hash']
 
         for path in paths:
-            filename = os.path.basename(path)
-            for ext in ['.wma', '.WMA', '.mp3', '.MP3']:
-                filename = filename.replace(ext, '')
+            filename = util.remove_extension(os.path.basename(path))
             mapping[filename] = hash
 
     return mapping
@@ -172,7 +169,7 @@ def get_subphrases(line: str) -> List[Tuple[str, str]]:
     if len(meta) == 1:
         start, end = meta[0]
         ts, text = line[start:end], line[end:]
-        item = (ts, text)
+        item = (ts, canonicalize(text))
         subphrases.append(item)
     elif len(meta) > 1:
         # Extract the text for the subphrase.
@@ -187,7 +184,7 @@ def get_subphrases(line: str) -> List[Tuple[str, str]]:
                 next_idx, next_size = meta[i + 1]
                 text = line[text_start:next_idx]
 
-            item = (ts, text)
+            item = (ts, canonicalize(text))
             subphrases.append(item)
 
     return subphrases
@@ -217,49 +214,6 @@ def canonicalize(text: str):
     :return: The cleaned up text.
     """
     return text
-
-
-def metadata_file_is_clean(fqn: str) -> bool:
-    """
-    Checks whether teh metadata file is valid.
-    - All rows are tab-delimited.
-    - All rows contain valid audio files. Note that some rows have two associated files.
-    - All rows contain a valid SHA256 hash.
-    - All rows have 36 columns.
-
-    :param fqn: Full path to the metadata file.
-    :return: True if metadata file is correct. False otherwise.
-    """
-    # Check if it exists.
-    if not os.path.exists(fqn):
-        print(f'File does not exist: {fqn}')
-        return False
-
-    # Open and check each line.
-    with open(fqn, 'r') as f:
-        lines = f.readlines()
-        for i, line in enumerate(lines):
-            # Skip the first line since it contains headers.
-            if i == 0:
-                continue
-
-            # Check if line is valid.
-            tokens = line.strip().split('\t')
-            if len(tokens) != 36:
-                print(f'Line {i+1} does not have 36 columns.')
-                return False
-
-            fqns = tokens[32].split(';')
-            # It is possible for this row to have zero filenames.
-            if len(fqns) == 1 and fqns[0] == '':
-                continue
-            # If this row has non-empty audio filenames.
-            for fqn in fqns:
-                if not os.path.exists(fqn):
-                    print(f'Line {i+1} audio does not exist: {fqn}')
-                    return False
-
-    return True
 
 
 if __name__ == '__main__':
