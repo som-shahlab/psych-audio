@@ -7,6 +7,7 @@ import config
 import argparse
 from google.cloud import storage
 
+
 def main(args):
     """
     Main entry loop. Sets up the Google API and loads an audio file.
@@ -29,7 +30,9 @@ def main(args):
 if __name__ == '__main__':
     os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = config.KEY
     parser = argparse.ArgumentParser()
-    parser.add_argument('bucket_name', type=str, help='Delete files inside this bucket.')
-    parser.add_argument('--confirm', action='store_true', help='You must include this flag to confirm you wish to delete the files.')
+    parser.add_argument('bucket_name', choices=['phi_audio', 'nonphiaudio', 'permission_check'],
+                        help='Delete files inside this bucket.')
+    parser.add_argument('--confirm', action='store_true',
+                        help='You must include this flag to confirm you wish to delete the files.')
     args = parser.parse_args()
     main(args)

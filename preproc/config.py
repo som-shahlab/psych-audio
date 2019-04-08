@@ -6,7 +6,7 @@ This file contains various global constants used for data preprocessing.
 meta_fqn: str = '/vol0/psych_audio/jasa_format/metadata.tsv'
 
 # The ground truth directory contains TXT file transcriptions of a subset of the audio files.
-gt_dir: str = '/vol0/psych_audio/gold-transcripts/gold-final'
+gt_dir: str = '/vol0/psych_audio/gold-transcripts/gold-final_2019-04-08'
 
 # Location of the folders and subfolders which contain the audio files.
 raw_audio_dir: str = '/vol0/psych_audio/raw-audio'
