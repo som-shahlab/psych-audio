@@ -55,6 +55,20 @@ squeue
 
 The output flac files will be placed in `OUTPUT_DIR`.
 
+### 2.3 Ground Truth JSON
+
+The ground truth files are currently in TXT files, as delivered by the annotators.
+We need to convert these to JSON as a standardization step.
+
+1. Ensure that `gt_dir` is correct inside `preproc/config.py`.
+2. Run the following inside `preproc/`.
+
+```bash
+python 03_create_gt_json.py OUTPUT_DIR
+```
+
+where `OUTPUT_DIR` is the target location to place the new, ground truth JSON files.
+
 ## 3 Speech-to-Text with Google Cloud
 
 ### 3.1 Prerequisites
@@ -94,3 +108,23 @@ python 02_transcribe.py OUTPUT_DIR
 ```
 
 where `OUTPUT_DIR` is your desired *local* folder where to store the json transcription results. This script will also print the transcription progress.
+
+### 3.4 Compute Metrics
+
+The final step is to compute metrics between the Google Speech API and the ground truth.
+At this point, we should have two directories (and what we named them):
+
+1. `machine`: Contains the Google Speech API output transcriptions as JSON format.
+2. `gt`: Contains the ground truth transcriptions as JSON format (see Section 2.3).
+
+To compute the metrics, run:
+
+```bash
+cd evaluation
+python evaluate.py MACHINE_DIR GT_DIR
+python comptue_metrics.py
+```
+
+The first script, `evaluate.py` computes metrics at a phrase-level. It also stores metadata such as the phrase start timestamp, speaker, and filename hash. This will procude `results.csv` which usually contains 10,000+ lines.
+
+The second script, `compute_metrics.py` takes the `results.csv` file and prints out the final WER, BLEU, etc. metrics, as well as displays any relevant plots.
