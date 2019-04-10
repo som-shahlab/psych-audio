@@ -8,7 +8,8 @@ import nltk
 import argparse
 import Levenshtein
 import numpy as np
-from typing import List, Dict, Set
+from tqdm import tqdm
+from typing import List, Dict
 
 
 def main(args):
@@ -20,7 +21,10 @@ def main(args):
 		sys.exit(0)
 
 	with open('results.csv', 'w') as f:
-		for filename in os.listdir(args.machine_dir):
+		f.write('hash,phrase_ts,speakerTag,bleu,wer\n')
+		ls = os.listdir(args.machine_dir)
+		for i in tqdm(range(len(ls))):
+			filename = ls[i]
 			hash = filename.replace('.json', '')
 			# Load and standardize the ground truth.
 			machine = load_json(os.path.join(args.machine_dir, filename))
@@ -107,7 +111,9 @@ def load_json(fqn: str):
 				# Get the core content.
 				startTime = float(D['startTime'].replace('s', ''))
 				timestamps.append(startTime)
-				words.append(D['word'])
+				word = D['word']
+				word = word.lower().replace('\'', '').replace('-', '')
+				words.append(word)
 
 				# Add the speaker information.
 				if 'speakerTag' in D:
@@ -137,7 +143,7 @@ def wer(pred: List[str], target: List[str]) -> float:
 	w2 = [chr(word2char[w]) for w in target]
 
 	d = Levenshtein.distance(''.join(w1), ''.join(w2))
-	wer = d / len(target)
+	wer = d / max(len(target), 1)
 	wer = min(wer, 1.0)
 	return wer
 
