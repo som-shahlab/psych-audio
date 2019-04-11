@@ -29,7 +29,7 @@ def main(args):
 	machine_out_file = open('machine_out.csv', 'w')
 
 	results_file.write('hash,seg_ts,seg_tag,bleu,gleu,wer\n')
-	ls = os.listdir(args.machine_dir)
+	ls = sorted(os.listdir(args.machine_dir))
 	for i in tqdm(range(len(ls))):
 		filename = ls[i]
 		hash = filename.replace('.json', '')
@@ -50,8 +50,8 @@ def main(args):
 				seg_tag.append(tag)
 
 		# Create segments for GT and machine using timestamps.
-		gt_segments = create_segments(seg_ts, gt)
 		machine_segments = create_segments(seg_ts, machine)
+		gt_segments = create_segments(seg_ts, gt)
 
 		# Compute sentence-level metrics.
 		for j in range(len(gt_segments)):
@@ -64,7 +64,9 @@ def main(args):
 			result = f'{hash},{seg_ts[j]},{seg_tag[j]},{bleu},{gleu},{wer}'
 			results_file.write(result + '\n')
 			gt_out_file.write(gt_segments[j] + '\n')
-			machine_out_file.write(machine_segments[j] + '\n')
+			# Bug where machine_segments[j] is duplicating itself.
+			stop_idx = int(len(machine_segments[j]) / 2)
+			machine_out_file.write(machine_segments[j][:stop_idx] + '\n')
 
 	results_file.close()
 	gt_out_file.close()
@@ -107,26 +109,10 @@ def create_segments(seg_ts: List[float], data: Dict) -> List[str]:
 		buffer = []
 		for j in idx:
 			buffer.append(data['words'][j])
-		segments.append(' '.join(buffer))
-	return segments
+		seg = ' '.join(buffer)
+		segments.append(seg)
 
-	buffer = []
-	idx = 0  # Timestamp of the bucket we're currently composing.
-	for i in range(len(data['timestamps'])):
-		ts, word = data['timestamps'][i], data['words'][i]
-		# Traverse the words/ts array and once we're past the current segment
-		# timestamp, save the current seg and reset the buffer.
-		if idx + 1 < len(seg_ts) and ts >= seg_ts[idx + 1]:
-			sentence = ' '.join(buffer)
-			sentence = preproc.util.canonicalize(sentence)
-			segments.append(sentence)
-			buffer = []
-			idx += 1
-		buffer.append(word)
-	# Write the last buffer.
-	sentence = ' '.join(buffer)
-	sentence = preproc.util.canonicalize(sentence)
-	segments.append(sentence)
+	segments = [preproc.util.canonicalize(x) for x in segments]
 	return segments
 
 
