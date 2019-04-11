@@ -38,6 +38,8 @@ def main(args):
 	print('Most Common')
 	print(counter.most_common(10))
 
+	print(f'# Words: {sum(counter.values())}')
+
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()

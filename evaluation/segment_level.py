@@ -13,7 +13,7 @@ from tqdm import tqdm
 from typing import List, Dict
 
 import preproc.util
-
+import evaluation.gleu
 
 def main(args):
 	if not os.path.exists(args.machine_dir):
@@ -23,11 +23,11 @@ def main(args):
 		print(f'Path does not exist: {args.gt_dir}')
 		sys.exit(0)
 
-	results_file = open('results.csv', 'w')
+	results_file = open('metrics.csv', 'w')
 	gt_out_file = open('gt_out.txt', 'w')
 	machine_out_file = open('machine_out.txt', 'w')
 
-	results_file.write('hash,speaker_ts,speaker_tag,bleu,wer\n')
+	results_file.write('hash,seg_ts,seg_tag,bleu,gleu,wer\n')
 	ls = os.listdir(args.machine_dir)
 	for i in tqdm(range(len(ls))):
 		filename = ls[i]
@@ -52,38 +52,19 @@ def main(args):
 		gt_segments = create_segments(seg_ts, gt)
 		machine_segments = create_segments(seg_ts, machine)
 
-		# See: https://stackoverflow.com/questions/40542523/nltk-corpus-level-bleu-vs-sentence-level-bleu-score
-		list_of_hypotheses = []
-		list_of_references = []
-
+		# Compute sentence-level metrics.
 		for j in range(len(gt_segments)):
 			reference = gt_segments[j].split(' ')
 			hypothesis = machine_segments[j].split(' ')
-			references = [reference]
-			bleu = nltk.translate.bleu_score.sentence_bleu(references=references, hypothesis=h)
-
-
-		for ts in buckets:
-			# Compose the reference and hypothesis.
-			r = gt_phrases[ts]
-			r_str = ' '.join(r)
-			h = machine_phrases[ts]
-			h_str = ' '.join(h)
-
-			references = [r]
-			list_of_hypotheses.append(h)
-			list_of_references.append(references)
-
-			# Compute metrics.
-			bleu1 = nltk.translate.bleu_score.sentence_bleu(references=references, hypothesis=h)
-			speakerTag = phrase_speakers[ts]
-
+			bleu = nltk.translate.bleu_score.sentence_bleu([reference], hypothesis)
+			wer = word_error_rate(hypothesis, reference)
+			gleu = evaluation.gleu.sentence_gleu([reference], hypothesis)
 			# Write to file.
-			word_error_rate = wer(h, r)
-			result = f'{hash},{ts},{speakerTag},{bleu1},{word_error_rate}\n'
-			results_file.write(result)
-			gt_out_file.write(r_str + '\n')
-			machine_out_file.write(h_str + '\n')
+			result = f'{hash},{seg_ts[j]},{seg_tag[j]},{bleu},{gleu},{wer}'
+			print(result)
+			results_file.write(result + '\n')
+			gt_out_file.write(gt_segments[j] + '\n')
+			machine_out_file.write(machine_segments[j] + '\n')
 
 	results_file.close()
 	gt_out_file.close()
@@ -181,7 +162,7 @@ def load_json(fqn: str):
 	return result
 
 
-def wer(pred: List[str], target: List[str]) -> float:
+def word_error_rate(pred: List[str], target: List[str]) -> float:
 	"""
 	Computes the Word Error Rate, defined as the edit distance between the
 	two provided sentences after tokenizing to words.
