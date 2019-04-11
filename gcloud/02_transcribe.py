@@ -44,6 +44,7 @@ def main(args):
 		enable_word_confidence=True,
 		enable_word_time_offsets=True,
 		diarization_speaker_count=2,
+		model='video',
 	)
 
 	print(f'Saving json output to: {args.output_dir}')
