@@ -28,6 +28,7 @@ def canonicalize(text: str) -> str:
 	- Converts to lower-case.
 	- Removes scrubbed data (denoted by brackets, e.g., [laugh])
 	- Removes punctuation.
+	Note: Canonicalized, scrubbed words will become the empty string.
 
 	From: https://stackoverflow.com/questions/19504350/how-to-convert-numbers-to-words-in-python
 

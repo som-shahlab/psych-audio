@@ -15,6 +15,7 @@ from typing import List, Dict
 import preproc.util
 import evaluation.gleu
 
+
 def main(args):
 	if not os.path.exists(args.machine_dir):
 		print(f'Path does not exist: {args.machine_dir}')
@@ -24,8 +25,8 @@ def main(args):
 		sys.exit(0)
 
 	results_file = open('metrics.csv', 'w')
-	gt_out_file = open('gt_out.txt', 'w')
-	machine_out_file = open('machine_out.txt', 'w')
+	gt_out_file = open('gt_out.csv', 'w')
+	machine_out_file = open('machine_out.csv', 'w')
 
 	results_file.write('hash,seg_ts,seg_tag,bleu,gleu,wer\n')
 	ls = os.listdir(args.machine_dir)
@@ -61,7 +62,6 @@ def main(args):
 			gleu = evaluation.gleu.sentence_gleu([reference], hypothesis)
 			# Write to file.
 			result = f'{hash},{seg_ts[j]},{seg_tag[j]},{bleu},{gleu},{wer}'
-			print(result)
 			results_file.write(result + '\n')
 			gt_out_file.write(gt_segments[j] + '\n')
 			machine_out_file.write(machine_segments[j] + '\n')
@@ -81,6 +81,35 @@ def create_segments(seg_ts: List[float], data: Dict) -> List[str]:
 	:return: List of segments, where each segment is a string.
 	"""
 	segments: List[str] = []
+
+	data_ts = np.asarray(data['timestamps'])
+	# Process everything except the last segment/bucket.
+	for i in range(0, len(seg_ts) - 1):
+		start = seg_ts[i]
+		end = seg_ts[i+1]
+		# Find all words with this segment's timestamps.
+		idx = np.where(np.logical_and(start <= data_ts, data_ts < end))[0]
+		# Grab the actual words.
+		if len(idx) > 0:
+			buffer = []
+			for j in idx:
+				buffer.append(data['words'][j])
+			segments.append(' '.join(buffer))
+		# If we have no words, append an empty segment.
+		else:
+			segments.append('')
+
+	# Process the last segment/bucket.
+	idx = np.where(seg_ts[-1] <= data_ts)[0]
+	if len(idx) == 0:
+		segments.append('')
+	else:
+		buffer = []
+		for j in idx:
+			buffer.append(data['words'][j])
+		segments.append(' '.join(buffer))
+	return segments
+
 	buffer = []
 	idx = 0  # Timestamp of the bucket we're currently composing.
 	for i in range(len(data['timestamps'])):
