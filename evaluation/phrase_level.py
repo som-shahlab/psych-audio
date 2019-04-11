@@ -76,7 +76,6 @@ def main(args):
 	machine_out_file.close()
 
 
-
 def get_phrases(buckets: List, data: Dict) -> Dict[float, List[str]]:
 	"""
 	Returns a dictionary of (timestamp, words) where words contains the phrases spoken at `timestamp`.

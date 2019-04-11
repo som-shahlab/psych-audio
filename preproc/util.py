@@ -4,6 +4,17 @@ This file contains helper functions for the other pre-processing files.
 import os
 
 
+def canonicalize(text: str) -> str:
+    """
+    Canonicalizes an input text string.
+    - Converts numbers 0-99 into words.
+    - Converts to lower-case.
+    - Removes scrubbed data (denoted by brackets, e.g., [laugh])
+    :param text: Input text as a string.
+    :return: Cleaned-up text.
+    """
+
+
 def metadata_file_is_clean(fqn: str) -> bool:
     """
     Checks whether teh metadata file is valid.
