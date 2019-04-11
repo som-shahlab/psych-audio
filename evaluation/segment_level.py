@@ -27,7 +27,7 @@ def main(args):
 	gt_out_file = open('gt_out.txt', 'w')
 	machine_out_file = open('machine_out.txt', 'w')
 
-	results_file.write('hash,speaker_ts,speakerTag,bleu,wer\n')
+	results_file.write('hash,speaker_ts,speaker_tag,bleu,wer\n')
 	ls = os.listdir(args.machine_dir)
 	for i in tqdm(range(len(ls))):
 		filename = ls[i]
@@ -40,7 +40,7 @@ def main(args):
 		seg_ts = []
 		seg_tag = []
 		current_tag = None
-		for j, tag in enumerate(gt['speakerTags']):
+		for j, tag in enumerate(gt['speaker_tags']):
 			# If first element, start the sequence OR
 			# If we encounter a different tag, start a new sequence.
 			if j == 0 or tag != current_tag:
@@ -49,12 +49,19 @@ def main(args):
 				seg_tag.append(tag)
 
 		# Create segments for GT and machine using timestamps.
-		gt_segments = create_segments(seg_ts, gt, canonicalize=True)
-		machine_segments = create_segments(seg_ts, machine, canonicalize=True)
+		gt_segments = create_segments(seg_ts, gt)
+		machine_segments = create_segments(seg_ts, machine)
 
 		# See: https://stackoverflow.com/questions/40542523/nltk-corpus-level-bleu-vs-sentence-level-bleu-score
 		list_of_hypotheses = []
 		list_of_references = []
+
+		for j in range(len(gt_segments)):
+			reference = gt_segments[j].split(' ')
+			hypothesis = machine_segments[j].split(' ')
+			references = [reference]
+			bleu = nltk.translate.bleu_score.sentence_bleu(references=references, hypothesis=h)
+
 
 		for ts in buckets:
 			# Compose the reference and hypothesis.
@@ -83,14 +90,13 @@ def main(args):
 	machine_out_file.close()
 
 
-def create_segments(seg_ts: List[float], data: Dict, canonicalize: bool = True) -> List[str]:
+def create_segments(seg_ts: List[float], data: Dict) -> List[str]:
 	"""
 	Takes a transcription dictionary and returns a list of segments.
 	Each segment are the words occurring between two timestamps.
 
 	:param seg_ts: List of timestamps denoting the start time of the segment.
 	:param data: Dictionary with keys: timestamps, speakerTags, words.
-	:param canonicalize: If True, cleans up the sentence by removing punctuation, etc.
 	:return: List of segments, where each segment is a string.
 	"""
 	segments: List[str] = []
@@ -100,20 +106,17 @@ def create_segments(seg_ts: List[float], data: Dict, canonicalize: bool = True) 
 		ts, word = data['timestamps'][i], data['words'][i]
 		# Traverse the words/ts array and once we're past the current segment
 		# timestamp, save the current seg and reset the buffer.
-		if idx < len(seg_ts) and ts >= seg_ts[idx]:
+		if idx + 1 < len(seg_ts) and ts >= seg_ts[idx + 1]:
 			sentence = ' '.join(buffer)
+			sentence = preproc.util.canonicalize(sentence)
 			segments.append(sentence)
 			buffer = []
 			idx += 1
 		buffer.append(word)
 	# Write the last buffer.
 	sentence = ' '.join(buffer)
+	sentence = preproc.util.canonicalize(sentence)
 	segments.append(sentence)
-
-	if canonicalize:
-		for i in range(len(segments)):
-			segments[i] = preproc.util.canonicalize(segments[i])
-
 	return segments
 
 
@@ -156,29 +159,25 @@ def load_json(fqn: str):
 
 	timestamps = []
 	words = []
-	speakerTags = []
-	scrubbed = 0
-	total = 0
+	speaker_tags = []
 	# For each word, add it to our list.
 	for B in A['results']:
 		for C in B['alternatives']:
 			for D in C['words']:
 				# Get the core content.
-				startTime = float(D['startTime'].replace('s', ''))
-				timestamps.append(startTime)
+				start_time = float(D['startTime'].replace('s', ''))
+				timestamps.append(start_time)
 				word = D['word']
-				if '[' in word and ']' in word:
-					scrubbed += 1
+				word = preproc.util.canonicalize(word)
 				words.append(word)
-				total += 1
 
 				# Add the speaker information.
 				if 'speakerTag' in D:
-					speakerTags.append(D['speakerTag'])
+					speaker_tags.append(D['speakerTag'])
 				else:
-					speakerTags.append('')
+					speaker_tags.append('')
 
-	result = {'timestamps': timestamps, 'words': words, 'speakerTags': speakerTags}
+	result = {'timestamps': timestamps, 'words': words, 'speaker_tags': speaker_tags}
 	return result
 
 
