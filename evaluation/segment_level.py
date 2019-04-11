@@ -12,6 +12,8 @@ import numpy as np
 from tqdm import tqdm
 from typing import List, Dict
 
+import preproc.util
+
 
 def main(args):
 	if not os.path.exists(args.machine_dir):
@@ -47,8 +49,8 @@ def main(args):
 				seg_tag.append(tag)
 
 		# Create segments for GT and machine using timestamps.
-		gt_segments = create_segments(seg_ts, gt)
-		machine_segments = create_segments(seg_ts, machine)
+		gt_segments = create_segments(seg_ts, gt, canonicalize=True)
+		machine_segments = create_segments(seg_ts, machine, canonicalize=True)
 
 		# See: https://stackoverflow.com/questions/40542523/nltk-corpus-level-bleu-vs-sentence-level-bleu-score
 		list_of_hypotheses = []
@@ -81,13 +83,14 @@ def main(args):
 	machine_out_file.close()
 
 
-def create_segments(seg_ts: List[float], data: Dict) -> List[str]:
+def create_segments(seg_ts: List[float], data: Dict, canonicalize: bool = True) -> List[str]:
 	"""
 	Takes a transcription dictionary and returns a list of segments.
 	Each segment are the words occurring between two timestamps.
 
 	:param seg_ts: List of timestamps denoting the start time of the segment.
 	:param data: Dictionary with keys: timestamps, speakerTags, words.
+	:param canonicalize: If True, cleans up the sentence by removing punctuation, etc.
 	:return: List of segments, where each segment is a string.
 	"""
 	segments: List[str] = []
@@ -106,6 +109,11 @@ def create_segments(seg_ts: List[float], data: Dict) -> List[str]:
 	# Write the last buffer.
 	sentence = ' '.join(buffer)
 	segments.append(sentence)
+
+	if canonicalize:
+		for i in range(len(segments)):
+			segments[i] = preproc.util.canonicalize(segments[i])
+
 	return segments
 
 
@@ -149,6 +157,8 @@ def load_json(fqn: str):
 	timestamps = []
 	words = []
 	speakerTags = []
+	scrubbed = 0
+	total = 0
 	# For each word, add it to our list.
 	for B in A['results']:
 		for C in B['alternatives']:
@@ -157,8 +167,10 @@ def load_json(fqn: str):
 				startTime = float(D['startTime'].replace('s', ''))
 				timestamps.append(startTime)
 				word = D['word']
-				word = word.lower().replace('\'', '').replace('-', '')
+				if '[' in word and ']' in word:
+					scrubbed += 1
 				words.append(word)
+				total += 1
 
 				# Add the speaker information.
 				if 'speakerTag' in D:

@@ -2,6 +2,23 @@
 This file contains helper functions for the other pre-processing files.
 """
 import os
+import re
+import string
+
+# Used for converitng numbers to words.
+num2words1 = {
+    0: 'zero', 1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five',
+    6: 'six', 7: 'seven', 8: 'eight', 9: 'nine', 10: 'ten',
+    11: 'eleven', 12: 'twelve', 13: 'thirteen', 14: 'fourteen',
+    15: 'fifteen', 16: 'sixteen', 17: 'seventeen',
+    18: 'eighteen', 19: 'nineteen'}
+num2words2 = [
+    'twenty', 'thirty', 'forty', 'fifty', 'sixty',
+    'seventy', 'eighty', 'ninety']
+ordinals = {
+    '1st': 'first', '2nd': 'second', '3rd': 'third', '4th': 'fourth',
+    '5th': 'fifth', '6th': 'sixth', '7th': 'seventh', '8th': 'eighth',
+    '9th': 'ninth', '10th': 'tenth'}
 
 
 def canonicalize(text: str) -> str:
@@ -10,9 +27,52 @@ def canonicalize(text: str) -> str:
     - Converts numbers 0-99 into words.
     - Converts to lower-case.
     - Removes scrubbed data (denoted by brackets, e.g., [laugh])
+    - Removes punctuation.
+
+    From: https://stackoverflow.com/questions/19504350/how-to-convert-numbers-to-words-in-python
+
     :param text: Input text as a string.
     :return: Cleaned-up text.
     """
+    # Convert to lower-case.
+    text = text.lower()
+
+    # Remove scrubbed data. Needs to happen before punctuation removal.
+    if '[' in text:
+        text = re.sub('\[.*\]|\s-\s.*', '', text)
+
+    # Remove other punctuation.
+    text = text.translate(str.maketrans('', '', string.punctuation))
+
+    # Convert numbers to words.
+    tokens = text.split(' ')
+    for i in range(len(tokens)):
+        if tokens[i].isdigit():
+            tokens[i] = digits_to_words(tokens[i])
+        elif tokens[i] in ordinals:
+            tokens[i] = ordinals[tokens[i]]
+
+    # Convert to lower-case again, just in case.
+    text = text.lower()
+
+    return text
+
+
+def digits_to_words(digits: str) -> str:
+    """
+    Converts a number, represented as digits, into English words.
+    e.g. 12 -> twelve, 48 -> forty eight
+    :param digits: String containing the number.
+    :return: String of the words.
+    """
+    integer = int(digits)
+    if 1 <= integer < 19:
+        return num2words1[integer]
+    elif 20 <= integer <= 99:
+        tens, below_ten = divmod(integer, 10)
+        return num2words2[tens - 2] + '-' + num2words1[below_ten]
+    else:
+        return ''
 
 
 def metadata_file_is_clean(fqn: str) -> bool:
