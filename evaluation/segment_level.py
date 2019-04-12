@@ -25,8 +25,9 @@ def main(args):
 		sys.exit(0)
 
 	results_file = open('metrics.csv', 'w')
-	gt_out_file = open('gt_out.csv', 'w')
-	machine_out_file = open('machine_out.csv', 'w')
+	gt_out_file = open('gt_out.txt', 'w')
+	machine_out_file = open('machine_out.txt', 'w')
+	combined_out_file = open('combined.txt', 'w')
 
 	results_file.write('hash,seg_ts,seg_tag,bleu,gleu,wer\n')
 	ls = sorted(os.listdir(args.machine_dir))
@@ -57,20 +58,43 @@ def main(args):
 		for j in range(len(gt_segments)):
 			reference = gt_segments[j].split(' ')
 			hypothesis = machine_segments[j].split(' ')
+			if is_doubled(hypothesis):
+				end = int(len(hypothesis) / 2)
+				hypothesis = hypothesis[:end]
+
 			bleu = nltk.translate.bleu_score.sentence_bleu([reference], hypothesis)
 			wer = word_error_rate(hypothesis, reference)
 			gleu = evaluation.gleu.sentence_gleu([reference], hypothesis)
-			# Write to file.
+
+			# Write to file.s
 			result = f'{hash},{seg_ts[j]},{seg_tag[j]},{bleu},{gleu},{wer}'
-			results_file.write(result + '\n')
-			gt_out_file.write(gt_segments[j] + '\n')
-			# Bug where machine_segments[j] is duplicating itself.
-			stop_idx = int(len(machine_segments[j]) / 2)
-			machine_out_file.write(machine_segments[j][:stop_idx] + '\n')
+			results_file.write(f'{result}\n')
+			combined_out_file.write('GT ' + str(reference) + '\n')
+			combined_out_file.write('M  ' + str(hypothesis) + '\n')
 
 	results_file.close()
 	gt_out_file.close()
 	machine_out_file.close()
+
+
+def is_doubled(arr: List[str]) -> bool:
+	"""
+	Checks whether a segment array of strings is doubled. That is,
+	the first half contains the same elements as the second half.
+	:param arr: List of strings.
+	:return: True if array is doubled, False otherwise.
+	"""
+	if len(arr) % 2 == 1:
+		return False
+
+	first = 0
+	second = int(len(arr) / 2)
+	while second < len(arr):
+		if arr[first] != arr[second]:
+			return False
+		first += 1
+		second += 1
+	return True
 
 
 def create_segments(seg_ts: List[float], data: Dict) -> List[str]:
@@ -101,18 +125,21 @@ def create_segments(seg_ts: List[float], data: Dict) -> List[str]:
 		else:
 			segments.append('')
 
+	# Ignore the last segment because we don't know when it ends.
+	# That is, the ground truth can end at 20 minutes, but the audio goes until 30 minutes. As a result,
+	# we will have 10 minutes of machine transcript that will be considered wrong.
 	# Process the last segment/bucket.
-	idx = np.where(seg_ts[-1] <= data_ts)[0]
-	if len(idx) == 0:
-		segments.append('')
-	else:
-		buffer = []
-		for j in idx:
-			buffer.append(data['words'][j])
-		seg = ' '.join(buffer)
-		segments.append(seg)
+	# idx = np.where(seg_ts[-1] <= data_ts)[0]
+	# if len(idx) == 0:
+	# 	segments.append('')
+	# else:
+	# 	buffer = []
+	# 	for j in idx:
+	# 		buffer.append(data['words'][j])
+	# 	seg = ' '.join(buffer)
+	# 	segments.append(seg)
 
-	segments = [preproc.util.canonicalize_sentence(x) for x in segments]
+	# segments = [preproc.util.canonicalize_sentence(x) for x in segments]
 	return segments
 
 
