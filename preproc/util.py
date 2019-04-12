@@ -24,7 +24,8 @@ ordinals = {
 # or they are considered stop words.
 remove_words = [
 	'um', 'mm', 'mmhmm', 'mmmm', 'uh', 'uhhuh', 'hmm', 'umhmm', 'huh', 'mmmhmm', 'aa', 'gonna', 'umm', 'hmhmm', 'uhuh',
-	'mmm', 'ah', 'uhhmm', 'ii', 'uhhum', 'mmhm', 'hm', 'ccaps', 'gotta', 'imim', 'eh', 'ugh', 'gotcha', 'hmmm', 'un']
+	'mmm', 'ah', 'uhhmm', 'ii', 'uhhum', 'mmhm', 'hm', 'ccaps', 'gotta', 'imim', 'eh', 'ugh', 'gotcha', 'hmmm', 'un',
+	'likei', 'microphone', 'justi', 'donti', 'da', 'toi', 'ma', 'whwhat', 'reallyi', 'iii', 'wasi', 'hap']
 remove_symbols = ['—', '’', '“']
 
 

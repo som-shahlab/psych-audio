@@ -23,7 +23,6 @@ def main(args):
 	gt_counter = load_and_count_json(args.gt_dir)
 	machine_counter = load_and_count_json(args.machine_dir)
 
-	assert(args.percent > 0)
 	result = find_untranscribed_words(gt_counter, machine_counter)
 	for x in result:
 		print(x)
@@ -47,7 +46,7 @@ def find_untranscribed_words(gt: Counter, machine: Counter) -> List[Dict[str, an
 		else:
 			machine_count = machine[word]
 
-		if gt_count > 1 and machine_count == 0:
+		if gt_count > 0 and machine_count == 0:
 			r = {'word': word, 'machine': machine_count, 'gt': gt_count}
 			result.append(r)
 

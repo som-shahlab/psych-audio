@@ -3,24 +3,33 @@ import matplotlib.pyplot as plt
 
 
 def main():
-	df = pd.read_csv('metrics.csv', sep=',')
+	# Compute session-level stats.
+	data = {
+		'session': pd.read_csv('results/session.csv', sep=','),
+		'segment': pd.read_csv('results/segment.csv', sep=','),
+	}
+	print('Level\tTag\tBLEU\tGLEU\tWER')
+	for level in ['session', 'segment']:
+		for speaker in ['T', 'P']:
+			bleu, gleu, wer = compute_stats(data[level], speaker)
+			print(f'{level}\t{speaker}\t{bleu:.2f}\t{gleu:.2f}\t{wer:.2f}')
 
-	avg_bleu = df['bleu'].mean()
-	avg_gleu = df['gleu'].mean()
-	avg_wer = df['wer'].mean()
-	print(f'BLEU: {avg_bleu}')
-	print(f'GLEU: {avg_gleu}')
-	print(f'WER: {avg_wer}')
 
-	tidx = df['seg_tag'] == 'T'
-	therapist_wer = df[tidx]['wer'].mean()
-	therapist_bleu = df[tidx]['bleu'].mean()
+def compute_stats(df: pd.DataFrame, speaker: str):
+	"""
+	Computes stats for a particular speaker.
 
-	patient_wer = df[~tidx]['wer'].mean()
-	patient_bleu = df[~tidx]['bleu'].mean()
-
-	print(f'Patient: BLEU: {patient_bleu} WER: {patient_wer}')
-	print(f'Therapist: BLEU: {therapist_bleu} WER: {therapist_wer}')
+	:param df: DataFrame of segment or session level results.
+	:param speaker: 'T' or 'P'
+	:return: BLEU, GLEU, WER, etc.
+	"""
+	assert(speaker in ['T', 'P'])
+	idx = (df['tag'] == speaker)
+	subset = df[idx]
+	bleu = subset['bleu'].mean() * 100
+	gleu = subset['gleu'].mean() * 100
+	wer = subset['wer'].mean() * 100
+	return bleu, gleu, wer
 
 
 if __name__ == '__main__':
