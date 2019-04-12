@@ -169,7 +169,7 @@ def get_subphrases(line: str) -> List[Tuple[str, str]]:
     if len(meta) == 1:
         start, end = meta[0]
         ts, text = line[start:end], line[end:]
-        item = (ts, canonicalize(text))
+        item = (ts, text)
         subphrases.append(item)
     elif len(meta) > 1:
         # Extract the text for the subphrase.
@@ -184,7 +184,7 @@ def get_subphrases(line: str) -> List[Tuple[str, str]]:
                 next_idx, next_size = meta[i + 1]
                 text = line[text_start:next_idx]
 
-            item = (ts, canonicalize(text))
+            item = (ts, text)
             subphrases.append(item)
 
     return subphrases
@@ -204,16 +204,6 @@ def get_mmss_from_time(text: str) -> (int, int):
     minute = int(text[matches[0][0]:matches[0][1]])
     seconds = int(text[matches[1][0]:matches[1][1]])
     return minute, seconds
-
-
-def canonicalize(text: str):
-    """
-    TODO: Canonicalizes the input text.
-
-    :param text:
-    :return: The cleaned up text.
-    """
-    return text
 
 
 if __name__ == '__main__':

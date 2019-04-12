@@ -121,10 +121,10 @@ To compute the metrics, run:
 
 ```bash
 cd evaluation
-python evaluate.py MACHINE_DIR GT_DIR
-python comptue_metrics.py
+python compute_metrics.py MACHINE_DIR GT_DIR
+python average.py
 ```
 
-The first script, `evaluate.py` computes metrics at a phrase-level. It also stores metadata such as the phrase start timestamp, speaker, and filename hash. This will procude `results.csv` which usually contains 10,000+ lines.
+The first script, `compute_metrics.py` computes metrics at a phrase-level. It also stores metadata such as the phrase start timestamp, speaker, and filename hash. This will procude `results.csv` which usually contains 10,000+ lines.
 
-The second script, `compute_metrics.py` takes the `results.csv` file and prints out the final WER, BLEU, etc. metrics, as well as displays any relevant plots.
+The second script, `average.py` takes the `results.csv` file and prints out the final WER, BLEU, etc. metrics, as well as displays any relevant plots.

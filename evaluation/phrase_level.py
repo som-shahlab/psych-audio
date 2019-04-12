@@ -20,48 +20,60 @@ def main(args):
 		print(f'Path does not exist: {args.gt_dir}')
 		sys.exit(0)
 
-	with open('results.csv', 'w') as f:
-		f.write('hash,phrase_ts,speakerTag,bleu,wer\n')
-		ls = os.listdir(args.machine_dir)
-		for i in tqdm(range(len(ls))):
-			filename = ls[i]
-			hash = filename.replace('.json', '')
-			# Load and standardize the ground truth.
-			machine = load_json(os.path.join(args.machine_dir, filename))
-			gt = load_json(os.path.join(args.gt_dir, filename))
+	results_file = open('results.csv', 'w')
+	gt_out_file = open('gt_out.txt', 'w')
+	machine_out_file = open('machine_out.txt', 'w')
 
-			# Split the machine and GT into phrases, according to the GT timestamps.
-			buckets = sorted(np.unique(gt['timestamps']))
-			gt_phrases = get_phrases(buckets, gt)
-			machine_phrases = get_phrases(buckets, machine)
+	results_file.write('hash,phrase_ts,speakerTag,bleu,wer\n')
+	ls = os.listdir(args.machine_dir)
+	for i in tqdm(range(len(ls))):
+		filename = ls[i]
+		hash = filename.replace('.json', '')
+		# Load and standardize the ground truth.
+		machine = load_json(os.path.join(args.machine_dir, filename))
+		gt = load_json(os.path.join(args.gt_dir, filename))
 
-			# Determine the speaker of each phrase.
-			phrase_speakers = {}
-			for ts in buckets:
-				idx = gt['timestamps'].index(ts)
-				speaker = gt['speakerTags'][idx]
-				phrase_speakers[ts] = speaker
+		# Split the machine and GT into phrases, according to the GT timestamps.
+		buckets = sorted(np.unique(gt['timestamps']))
+		gt_phrases = get_phrases(buckets, gt)
+		machine_phrases = get_phrases(buckets, machine)
 
-			# See: https://stackoverflow.com/questions/40542523/nltk-corpus-level-bleu-vs-sentence-level-bleu-score
-			list_of_hypotheses = []
-			list_of_references = []
+		# Determine the speaker of each phrase.
+		phrase_speakers = {}
+		for ts in buckets:
+			idx = gt['timestamps'].index(ts)
+			speaker = gt['speakerTags'][idx]
+			phrase_speakers[ts] = speaker
 
-			for ts in buckets:
-				# Compose the reference and hypothesis.
-				r = gt_phrases[ts]
-				h = machine_phrases[ts]
-				references = [r]
-				list_of_hypotheses.append(h)
-				list_of_references.append(references)
+		# See: https://stackoverflow.com/questions/40542523/nltk-corpus-level-bleu-vs-sentence-level-bleu-score
+		list_of_hypotheses = []
+		list_of_references = []
 
-				# Compute metrics.
-				bleu1 = nltk.translate.bleu_score.sentence_bleu(references=references, hypothesis=h)
-				speakerTag = phrase_speakers[ts]
+		for ts in buckets:
+			# Compose the reference and hypothesis.
+			r = gt_phrases[ts]
+			r_str = ' '.join(r)
+			h = machine_phrases[ts]
+			h_str = ' '.join(h)
 
-				# Write to file.
-				word_error_rate = wer(h, r)
-				result = f'{hash},{ts},{speakerTag},{bleu1},{word_error_rate}\n'
-				f.write(result)
+			references = [r]
+			list_of_hypotheses.append(h)
+			list_of_references.append(references)
+
+			# Compute metrics.
+			bleu1 = nltk.translate.bleu_score.sentence_bleu(references=references, hypothesis=h)
+			speakerTag = phrase_speakers[ts]
+
+			# Write to file.
+			word_error_rate = wer(h, r)
+			result = f'{hash},{ts},{speakerTag},{bleu1},{word_error_rate}\n'
+			results_file.write(result)
+			gt_out_file.write(r_str + '\n')
+			machine_out_file.write(h_str + '\n')
+
+	results_file.close()
+	gt_out_file.close()
+	machine_out_file.close()
 
 
 def get_phrases(buckets: List, data: Dict) -> Dict[float, List[str]]:
