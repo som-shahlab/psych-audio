@@ -24,12 +24,13 @@ def main(args):
 	machine_counter = load_and_count_json(args.machine_dir)
 
 	assert(args.percent > 0)
-	result = find_untranscribed_words(gt_counter, machine_counter, args.percent)
-
+	result = find_untranscribed_words(gt_counter, machine_counter)
+	for x in result:
+		print(x)
 	return 0
 
 
-def find_untranscribed_words(gt: Counter, machine: Counter, percent: int) -> List[Dict[str, any]]:
+def find_untranscribed_words(gt: Counter, machine: Counter) -> List[Dict[str, any]]:
 	"""
 	Finds untranscribed words.
 
@@ -37,7 +38,6 @@ def find_untranscribed_words(gt: Counter, machine: Counter, percent: int) -> Lis
 
 	:param gt: Counter of GT words.
 	:param machine: Counter of machine words.
-	:param percent: Flag the word if the machine reports less than (`percent`)% than reported in GT.
 	:return: List of word/counts which occur in GT but not (or infrequently) in the machine transcription.
 	"""
 	result: List[Dict[str, any]] = []
@@ -46,9 +46,11 @@ def find_untranscribed_words(gt: Counter, machine: Counter, percent: int) -> Lis
 			machine_count = 0
 		else:
 			machine_count = machine[word]
-		if machine_count < gt_count * percent:
+
+		if gt_count > 1 and machine_count == 0:
 			r = {'word': word, 'machine': machine_count, 'gt': gt_count}
 			result.append(r)
+
 	return result
 
 
@@ -62,16 +64,16 @@ def load_and_count_json(fqn: str) -> Counter:
 	counter = Counter()
 	for i in tqdm(range(len(ls))):
 		filename = ls[i]
-		fqn = os.path.join(fqn, filename)
-		with open(fqn, 'r') as f:
+		with open(os.path.join(fqn, filename), 'r') as f:
 			A = json.load(f)
 
 		for B in A['results']:
 			for C in B['alternatives']:
 				for D in C['words']:
 					word = D['word']
-					word = preproc.util.canonicalize(word)
-					counter[word] += 1
+					word = preproc.util.canonicalize_word(word)
+					if word != '':
+						counter[word] += 1
 	return counter
 
 
@@ -81,7 +83,5 @@ if __name__ == '__main__':
 						help='Location of the predicted json transcriptions.')
 	parser.add_argument('gt_dir', type=str,
 						help='Location of the ground truth json transcription.')
-	parser.add_argument('--percent', default=0.1, type=float,
-						help='Report words where machine is this % of the GT word count.')
 	main(parser.parse_args())
 

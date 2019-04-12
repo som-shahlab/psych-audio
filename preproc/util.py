@@ -22,7 +22,10 @@ ordinals = {
 
 # Remove these words, either because Speech API does not transcribe them,
 # or they are considered stop words.
-remove_words = ['um', 'mm', '—', '’', 'mmhmm', 'mmmm']
+remove_words = [
+	'um', 'mm', 'mmhmm', 'mmmm', 'uh', 'uhhuh', 'hmm', 'umhmm', 'huh', 'mmmhmm', 'aa', 'gonna', 'umm', 'hmhmm', 'uhuh',
+	'mmm', 'ah', 'uhhmm', 'ii', 'uhhum', 'mmhm', 'hm', 'ccaps', 'gotta', 'imim', 'eh', 'ugh', 'gotcha', 'hmmm', 'un']
+remove_symbols = ['—', '’', '“']
 
 
 def canonicalize_word(word: str) -> str:
@@ -38,29 +41,33 @@ def canonicalize_word(word: str) -> str:
 	"""
 	word = word.lower()
 
-	# Remove stop words.
-	for rw in remove_words:
-		if word == rw:
-			return ''
-
 	# Remove scrubbed data. Needs to happen before punctuation removal.
 	if '[' in word and ']' in word:
 		return ''
 		# word = re.sub('\[.*\]|\s-\s.*', '', word)
 
+	# Remove punctuation and other symbols.
+	word = word.translate(str.maketrans('', '', string.punctuation))
+	for sym in remove_symbols:
+		word = word.replace(sym, '')
+
 	# Convert numbers to words.
 	if word.isdigit():
 		word = digits_to_words(word)
-	elif word in ordinals:
+	if word in ordinals:
 		word = ordinals[word]
 
 	# Remove everything except letters.
-	clean_word = ''
-	for c in word:
-		if c.isalpha():
-			clean_word += c
+	# clean_word = ''
+	# for c in word:
+	# 	if c.isalpha():
+	# 		clean_word += c
 
-	return clean_word
+	# Remove stop words.
+	if word in remove_words:
+		return ''
+
+	return word
 
 
 def canonicalize_sentence(text: str) -> str:
