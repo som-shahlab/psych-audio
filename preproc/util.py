@@ -22,7 +22,7 @@ ordinals = {
 
 # Remove these words, either because Speech API does not transcribe them,
 # or they are considered stop words.
-remove_words = ['um', 'mm']
+remove_words = ['um', 'mm', '—', '’', 'mmhmm', 'mmmm']
 
 
 def canonicalize_word(word: str) -> str:
@@ -54,10 +54,13 @@ def canonicalize_word(word: str) -> str:
 	elif word in ordinals:
 		word = ordinals[word]
 
-	# Remove punctuation.
-	word = word.translate(str.maketrans('', '', string.punctuation))
+	# Remove everything except letters.
+	clean_word = ''
+	for c in word:
+		if c.isalpha():
+			clean_word += c
 
-	return word
+	return clean_word
 
 
 def canonicalize_sentence(text: str) -> str:
