@@ -18,11 +18,11 @@ def main():
 	for k in range(len(metric_names)):
 		axarr[0, k].set_title(metric_names[k])
 
-	print('Level\tTag\tBLEU\tGLEU\tWER')
+	print('Level\tTag\tN\tBLEU\tGLEU\tWER')
 	for i, level in enumerate(['segment', 'session']):
 		for j, speaker in enumerate(['T', 'P']):
 			row = i * 2 + j
-			result = get_subset(data[level], speaker)
+			result, n = get_subset(data[level], speaker)
 			label = f'{level}-{speaker}'
 			n_bins = 20
 			axarr[row, 0].set(ylabel=label)
@@ -30,7 +30,7 @@ def main():
 				axarr[row, k].hist(result[metric_names[k]]['values'], bins=n_bins)
 
 			# Result strings.
-			result_string = f'{level}\t{speaker}'
+			result_string = f'{level}\t{speaker}\t{n}'
 			for metric in metric_names:
 				mean = result[metric]['mean']
 				std = result[metric]['std']
@@ -69,7 +69,8 @@ def get_subset(df: pd.DataFrame, speaker: str):
 		}
 
 	}
-	return result
+	n = len(subset)
+	return result, n
 
 
 if __name__ == '__main__':
