@@ -36,16 +36,16 @@ def main(args):
 
 	print('Creating arrays...')
 	# BERT does not allow empty strings. Therefore we need to keep track of which idx each gt/pred belongs to.
+	skip_gids = set()  # skip any pairs where GT or pred is empty.
 	for i in range(len(lines)):
-		is_pred = False
-		if i % 2 == 0:
-			is_pred = True
-
 		gid, sentence = tuple(lines[i].strip().split(','))
 		if len(sentence) == 0:
+			skip_gids.add(gid)
+
+		if gid in skip_gids:
 			continue
 
-		if is_pred:
+		if i % 2 == 0:
 			pred_sentences.append(sentence)
 			pred_gids.append(gid)
 		else:
@@ -58,7 +58,7 @@ def main(args):
 	gt_gids = np.asarray(gt_gids[:args.n_lines])
 
 	# Get embeddings.
-	print('Encoding preds...')
+	print('Encoding...')
 	pred_embeddings = bc.encode(pred_sentences)
 	gt_embeddings = bc.encode(gt_sentences)
 
