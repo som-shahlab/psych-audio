@@ -20,10 +20,18 @@ ordinals = {
 	'5th': 'fifth', '6th': 'sixth', '7th': 'seventh', '8th': 'eighth',
 	'9th': 'ninth', '10th': 'tenth'}
 
+# Remove these words, either because Speech API does not transcribe them,
+# or they are considered stop words.
+remove_words = [
+	'um', 'mm', 'mmhmm', 'mmmm', 'uh', 'uhhuh', 'hmm', 'umhmm', 'huh', 'mmmhmm', 'aa', 'gonna', 'umm', 'hmhmm', 'uhuh',
+	'mmm', 'ah', 'uhhmm', 'ii', 'uhhum', 'mmhm', 'hm', 'ccaps', 'gotta', 'imim', 'eh', 'ugh', 'gotcha', 'hmmm', 'un',
+	'likei', 'microphone', 'justi', 'donti', 'da', 'toi', 'ma', 'whwhat', 'reallyi', 'iii', 'wasi', 'hap']
+remove_symbols = ['—', '’', '“']
 
-def canonicalize(text: str) -> str:
+
+def canonicalize_word(word: str) -> str:
 	"""
-	Canonicalizes an input text string.
+	Canonicalizes a single word.
 	- Converts numbers 0-99 into words.
 	- Converts to lower-case.
 	- Removes scrubbed data (denoted by brackets, e.g., [laugh])
@@ -31,34 +39,58 @@ def canonicalize(text: str) -> str:
 	Note: Canonicalized, scrubbed words will become the empty string.
 
 	From: https://stackoverflow.com/questions/19504350/how-to-convert-numbers-to-words-in-python
+	"""
+	word = word.lower()
 
+	# Remove scrubbed data. Needs to happen before punctuation removal.
+	if '[' in word and ']' in word:
+		return ''
+		# word = re.sub('\[.*\]|\s-\s.*', '', word)
+
+	# Remove punctuation and other symbols.
+	word = word.translate(str.maketrans('', '', string.punctuation))
+	for sym in remove_symbols:
+		word = word.replace(sym, '')
+
+	# Convert numbers to words.
+	if word.isdigit():
+		word = digits_to_words(word)
+	if word in ordinals:
+		word = ordinals[word]
+
+	# Remove everything except letters.
+	# clean_word = ''
+	# for c in word:
+	# 	if c.isalpha():
+	# 		clean_word += c
+
+	# Remove stop words.
+	if word in remove_words:
+		return ''
+
+	return word
+
+
+def canonicalize_sentence(text: str) -> str:
+	"""
+	Canonicalizes a full sentence.
 	:param text: Input text as a string.
 	:return: Cleaned-up text.
 	"""
 	# Convert to lower-case.
 	text = text.lower()
 
-	# Remove scrubbed data. Needs to happen before punctuation removal.
-	if '[' in text:
-		text = re.sub('\[.*\]|\s-\s.*', '', text)
-
-	# Remove other punctuation.
-	text = text.translate(str.maketrans('', '', string.punctuation))
-
-	# Convert numbers to words.
-	tokens = text.split(' ')
-	for i in range(len(tokens)):
-		if tokens[i].isdigit():
-			tokens[i] = digits_to_words(tokens[i])
-		elif tokens[i] in ordinals:
-			tokens[i] = ordinals[tokens[i]]
-	text = ' '.join(tokens)
-
-	# Convert to lower-case again, just in case.
-	text = text.lower()
-
 	# Merge multiple spaces.
 	text = re.sub(' +', ' ', text).strip()
+	text = text.strip()
+
+	# Process each word.
+	tokens = text.split(' ')
+	for i in range(len(tokens)):
+		tokens[i] = canonicalize_word(tokens[i])
+	text = ' '.join(tokens)
+
+	text = text.lower()
 
 	return text
 

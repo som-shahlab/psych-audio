@@ -24,11 +24,17 @@ def main(args):
 		print(f'Path does not exist: {args.gt_dir}')
 		sys.exit(0)
 
-	results_file = open('metrics.csv', 'w')
-	gt_out_file = open('gt_out.csv', 'w')
-	machine_out_file = open('machine_out.csv', 'w')
+	# Create the output file.
+	segment_result_file = open('results/segment.csv', 'w')
+	machine_gt_out_file = open('results/text.txt', 'w')
+	session_result_file = open('results/session.csv', 'w')
 
-	results_file.write('hash,seg_ts,seg_tag,bleu,gleu,wer\n')
+	# Write the headers.
+	header = 'hash,ts,tag,bleu,gleu,wer'
+	session_result_file.write(header + '\n')
+	segment_result_file.write(header + '\n')
+
+	# Loop over all sessions.
 	ls = sorted(os.listdir(args.machine_dir))
 	for i in tqdm(range(len(ls))):
 		filename = ls[i]
@@ -53,24 +59,79 @@ def main(args):
 		machine_segments = create_segments(seg_ts, machine)
 		gt_segments = create_segments(seg_ts, gt)
 
+		# Create the accumulator for session-level stats.
+		session = {
+			'gt': {'T': [], 'P': []},
+			'machine': {'T': [], 'P': []}
+		}
 		# Compute sentence-level metrics.
 		for j in range(len(gt_segments)):
+			speaker = seg_tag[j]
 			reference = gt_segments[j].split(' ')
 			hypothesis = machine_segments[j].split(' ')
+
+			# There's a bug where the hypothesis content is occasionally duplicated.
+			if is_doubled(hypothesis):
+				end = int(len(hypothesis) / 2)
+				hypothesis = hypothesis[:end]
+
+			# Update the session-level text.
+			if speaker not in session['gt'].keys():
+				continue
+
+			session['gt'][speaker] += reference
+			session['machine'][speaker] += hypothesis
+
+			# Compute segment-level stats.
 			bleu = nltk.translate.bleu_score.sentence_bleu([reference], hypothesis)
 			wer = word_error_rate(hypothesis, reference)
 			gleu = evaluation.gleu.sentence_gleu([reference], hypothesis)
-			# Write to file.
-			result = f'{hash},{seg_ts[j]},{seg_tag[j]},{bleu},{gleu},{wer}'
-			results_file.write(result + '\n')
-			gt_out_file.write(gt_segments[j] + '\n')
-			# Bug where machine_segments[j] is duplicating itself.
-			stop_idx = int(len(machine_segments[j]) / 2)
-			machine_out_file.write(machine_segments[j][:stop_idx] + '\n')
 
-	results_file.close()
-	gt_out_file.close()
-	machine_out_file.close()
+			# Write to files.
+			result = f'{hash},{seg_ts[j]},{speaker},{bleu},{gleu},{wer}'
+			segment_result_file.write(f'{result}\n')
+			machine_gt_out_file.write('GT ' + str(reference) + '\n')
+			machine_gt_out_file.write('M  ' + str(hypothesis) + '\n')
+
+		# Compute session-level stats.
+		for aa in session.keys():
+			for bb in session[aa].keys():
+				sentence = ' '.join(session[aa][bb])
+				clean = preproc.util.canonicalize_sentence(sentence)
+				session[aa][bb] = clean.split(' ')
+
+		for speaker in ['T', 'P']:
+			reference = session['gt'][speaker]
+			hypothesis = session['machine'][speaker]
+			bleu = nltk.translate.bleu_score.sentence_bleu([reference], hypothesis)
+			wer = word_error_rate(hypothesis, reference)
+			gleu = evaluation.gleu.sentence_gleu([reference], hypothesis)
+			# Skip the segment timestamp.
+			session_result_file.write(f'{hash},,{speaker},{bleu},{gleu},{wer}\n')
+
+	segment_result_file.close()
+	machine_gt_out_file.close()
+	session_result_file.close()
+
+
+def is_doubled(arr: List[str]) -> bool:
+	"""
+	Checks whether a segment array of strings is doubled. That is,
+	the first half contains the same elements as the second half.
+	:param arr: List of strings.
+	:return: True if array is doubled, False otherwise.
+	"""
+	if len(arr) % 2 == 1:
+		return False
+
+	first = 0
+	second = int(len(arr) / 2)
+	while second < len(arr):
+		if arr[first] != arr[second]:
+			return False
+		first += 1
+		second += 1
+	return True
 
 
 def create_segments(seg_ts: List[float], data: Dict) -> List[str]:
@@ -101,18 +162,21 @@ def create_segments(seg_ts: List[float], data: Dict) -> List[str]:
 		else:
 			segments.append('')
 
+	# Ignore the last segment because we don't know when it ends.
+	# That is, the ground truth can end at 20 minutes, but the audio goes until 30 minutes. As a result,
+	# we will have 10 minutes of machine transcript that will be considered wrong.
 	# Process the last segment/bucket.
-	idx = np.where(seg_ts[-1] <= data_ts)[0]
-	if len(idx) == 0:
-		segments.append('')
-	else:
-		buffer = []
-		for j in idx:
-			buffer.append(data['words'][j])
-		seg = ' '.join(buffer)
-		segments.append(seg)
+	# idx = np.where(seg_ts[-1] <= data_ts)[0]
+	# if len(idx) == 0:
+	# 	segments.append('')
+	# else:
+	# 	buffer = []
+	# 	for j in idx:
+	# 		buffer.append(data['words'][j])
+	# 	seg = ' '.join(buffer)
+	# 	segments.append(seg)
 
-	segments = [preproc.util.canonicalize(x) for x in segments]
+	# segments = [preproc.util.canonicalize_sentence(x) for x in segments]
 	return segments
 
 
@@ -164,7 +228,7 @@ def load_json(fqn: str):
 				start_time = float(D['startTime'].replace('s', ''))
 				timestamps.append(start_time)
 				word = D['word']
-				word = preproc.util.canonicalize(word)
+				word = preproc.util.canonicalize_word(word)
 				words.append(word)
 
 				# Add the speaker information.
