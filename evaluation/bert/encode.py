@@ -20,9 +20,6 @@ def main(args):
 	if not os.path.exists(args.text_file):
 		print(f'File does not exist: {args.text_file}')
 		sys.exit(1)
-	if args.n_lines <= 0:
-		print('Invalid n_lines')
-		sys.exit(1)
 
 	print('Creating BERT client...')
 	bc = BertClient(check_length=False)
@@ -52,13 +49,14 @@ def main(args):
 			gt_sentences.append(sentence)
 			gt_gids.append(gid)
 
-	pred_sentences = pred_sentences[:args.n_lines]
-	pred_gids = np.asarray(pred_gids[:args.n_lines])
-	gt_sentences = gt_sentences[:args.n_lines]
-	gt_gids = np.asarray(gt_gids[:args.n_lines])
+	if args.n_lines > 0:
+		pred_sentences = pred_sentences[:args.n_lines]
+		pred_gids = np.asarray(pred_gids[:args.n_lines])
+		gt_sentences = gt_sentences[:args.n_lines]
+		gt_gids = np.asarray(gt_gids[:args.n_lines])
 
 	# Get embeddings.
-	print('Encoding...')
+	print(f'Encoding {len(gt_gids)} sentences...')
 	pred_embeddings = bc.encode(pred_sentences)
 	gt_embeddings = bc.encode(gt_sentences)
 
@@ -76,5 +74,5 @@ def main(args):
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument('text_file', type=str, help='Location of the combined GT/pred text file.')
-	parser.add_argument('n_lines', type=int, help='Number of lines to process.')
+	parser.add_argument('--n_lines', type=int, default=-1, help='Number of lines to process. Use -1 to process all.')
 	main(parser.parse_args())
