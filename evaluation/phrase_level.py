@@ -2,6 +2,7 @@
 Computes segment-level metrics.
 A segment is defined as a single speaker, across multiple timestamps.
 """
+import re
 import os
 import sys
 import json
@@ -25,17 +26,18 @@ def main(args):
 		sys.exit(0)
 
 	# Create the output file.
-	segment_result_file = open('results/segment.csv', 'w')
+	segment_result_file = open('results/phrase.csv', 'w')
 	machine_gt_out_file = open('results/text.txt', 'w')
 	session_result_file = open('results/session.csv', 'w')
 
 	# Write the headers.
-	header = 'hash,ts,tag,bleu,gleu,wer'
+	header = 'gid,hash,ts,tag,bleu,gleu,wer'
 	session_result_file.write(header + '\n')
 	segment_result_file.write(header + '\n')
 
 	# Loop over all sessions.
 	ls = sorted(os.listdir(args.machine_dir))
+	gid = 0  # Global sentence ID.
 	for i in tqdm(range(len(ls))):
 		filename = ls[i]
 		hash = filename.replace('.json', '')
@@ -74,6 +76,7 @@ def main(args):
 			if is_doubled(hypothesis):
 				end = int(len(hypothesis) / 2)
 				hypothesis = hypothesis[:end]
+				machine_segments[j] = ' '.join(hypothesis)
 
 			# Update the session-level text.
 			if speaker not in session['gt'].keys():
@@ -88,10 +91,11 @@ def main(args):
 			gleu = evaluation.gleu.sentence_gleu([reference], hypothesis)
 
 			# Write to files.
-			result = f'{hash},{seg_ts[j]},{speaker},{bleu},{gleu},{wer}'
+			result = f'{gid},{hash},{seg_ts[j]},{speaker},{bleu},{gleu},{wer}'
 			segment_result_file.write(f'{result}\n')
-			machine_gt_out_file.write(f'{j},{machine_segments[j]}')
-			machine_gt_out_file.write(f'{j},{gt_segments[j]}')
+			machine_gt_out_file.write(f'{gid},{machine_segments[j]}' + '\n')
+			machine_gt_out_file.write(f'{gid},{gt_segments[j]}' + '\n')
+			gid += 1
 
 		# Compute session-level stats.
 		for aa in session.keys():
@@ -157,7 +161,9 @@ def create_segments(seg_ts: List[float], data: Dict) -> List[str]:
 			buffer = []
 			for j in idx:
 				buffer.append(data['words'][j])
-			segments.append(' '.join(buffer))
+			sentence = ' '.join(buffer)
+			sentence = re.sub('\s+', ' ', sentence).strip()
+			segments.append(sentence)
 		# If we have no words, append an empty segment.
 		else:
 			segments.append('')
