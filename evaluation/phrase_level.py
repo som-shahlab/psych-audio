@@ -1,6 +1,8 @@
 """
-This file contains functions for evaluating the Google Speech API transcription performance.
+Computes segment-level metrics.
+A segment is defined as a single speaker, across multiple timestamps.
 """
+import re
 import os
 import sys
 import json
@@ -11,6 +13,9 @@ import numpy as np
 from tqdm import tqdm
 from typing import List, Dict
 
+import preproc.util
+import evaluation.gleu
+
 
 def main(args):
 	if not os.path.exists(args.machine_dir):
@@ -20,12 +25,19 @@ def main(args):
 		print(f'Path does not exist: {args.gt_dir}')
 		sys.exit(0)
 
-	results_file = open('results.csv', 'w')
-	gt_out_file = open('gt_out.txt', 'w')
-	machine_out_file = open('machine_out.txt', 'w')
+	# Create the output file.
+	segment_result_file = open('results/phrase.csv', 'w')
+	machine_gt_out_file = open('results/text.txt', 'w')
+	session_result_file = open('results/session.csv', 'w')
 
-	results_file.write('hash,phrase_ts,speakerTag,bleu,wer\n')
-	ls = os.listdir(args.machine_dir)
+	# Write the headers.
+	header = 'gid,hash,ts,tag,bleu,gleu,wer'
+	session_result_file.write(header + '\n')
+	segment_result_file.write(header + '\n')
+
+	# Loop over all sessions.
+	ls = sorted(os.listdir(args.machine_dir))
+	gid = 0  # Global sentence ID.
 	for i in tqdm(range(len(ls))):
 		filename = ls[i]
 		hash = filename.replace('.json', '')
@@ -33,47 +45,145 @@ def main(args):
 		machine = load_json(os.path.join(args.machine_dir, filename))
 		gt = load_json(os.path.join(args.gt_dir, filename))
 
-		# Split the machine and GT into phrases, according to the GT timestamps.
-		buckets = sorted(np.unique(gt['timestamps']))
-		gt_phrases = get_phrases(buckets, gt)
-		machine_phrases = get_phrases(buckets, machine)
+		# Get segment timestamps.
+		seg_ts = []
+		seg_tag = []
+		current_tag = None
+		for j, tag in enumerate(gt['speaker_tags']):
+			# If first element, start the sequence OR
+			# If we encounter a different tag, start a new sequence.
+			if j == 0 or tag != current_tag:
+				current_tag = tag
+				seg_ts.append(gt['timestamps'][j])
+				seg_tag.append(tag)
 
-		# Determine the speaker of each phrase.
-		phrase_speakers = {}
-		for ts in buckets:
-			idx = gt['timestamps'].index(ts)
-			speaker = gt['speakerTags'][idx]
-			phrase_speakers[ts] = speaker
+		# Create segments for GT and machine using timestamps.
+		machine_segments = create_segments(seg_ts, machine)
+		gt_segments = create_segments(seg_ts, gt)
 
-		# See: https://stackoverflow.com/questions/40542523/nltk-corpus-level-bleu-vs-sentence-level-bleu-score
-		list_of_hypotheses = []
-		list_of_references = []
+		# Create the accumulator for session-level stats.
+		session = {
+			'gt': {'T': [], 'P': []},
+			'machine': {'T': [], 'P': []}
+		}
+		# Compute sentence-level metrics.
+		for j in range(len(gt_segments)):
+			speaker = seg_tag[j]
+			reference = gt_segments[j].split(' ')
+			hypothesis = machine_segments[j].split(' ')
 
-		for ts in buckets:
-			# Compose the reference and hypothesis.
-			r = gt_phrases[ts]
-			r_str = ' '.join(r)
-			h = machine_phrases[ts]
-			h_str = ' '.join(h)
+			# There's a bug where the hypothesis content is occasionally duplicated.
+			if is_doubled(hypothesis):
+				end = int(len(hypothesis) / 2)
+				hypothesis = hypothesis[:end]
+				machine_segments[j] = ' '.join(hypothesis)
 
-			references = [r]
-			list_of_hypotheses.append(h)
-			list_of_references.append(references)
+			# Update the session-level text.
+			if speaker not in session['gt'].keys():
+				continue
 
-			# Compute metrics.
-			bleu1 = nltk.translate.bleu_score.sentence_bleu(references=references, hypothesis=h)
-			speakerTag = phrase_speakers[ts]
+			session['gt'][speaker] += reference
+			session['machine'][speaker] += hypothesis
 
-			# Write to file.
-			word_error_rate = wer(h, r)
-			result = f'{hash},{ts},{speakerTag},{bleu1},{word_error_rate}\n'
-			results_file.write(result)
-			gt_out_file.write(r_str + '\n')
-			machine_out_file.write(h_str + '\n')
+			# Compute segment-level stats.
+			bleu = nltk.translate.bleu_score.sentence_bleu([reference], hypothesis)
+			wer = word_error_rate(hypothesis, reference)
+			gleu = evaluation.gleu.sentence_gleu([reference], hypothesis)
 
-	results_file.close()
-	gt_out_file.close()
-	machine_out_file.close()
+			# Write to files.
+			result = f'{gid},{hash},{seg_ts[j]},{speaker},{bleu},{gleu},{wer}'
+			segment_result_file.write(f'{result}\n')
+			machine_gt_out_file.write(f'{gid},{machine_segments[j]}' + '\n')
+			machine_gt_out_file.write(f'{gid},{gt_segments[j]}' + '\n')
+			gid += 1
+
+		# Compute session-level stats.
+		for aa in session.keys():
+			for bb in session[aa].keys():
+				sentence = ' '.join(session[aa][bb])
+				clean = preproc.util.canonicalize_sentence(sentence)
+				session[aa][bb] = clean.split(' ')
+
+		for speaker in ['T', 'P']:
+			reference = session['gt'][speaker]
+			hypothesis = session['machine'][speaker]
+			bleu = nltk.translate.bleu_score.sentence_bleu([reference], hypothesis)
+			wer = word_error_rate(hypothesis, reference)
+			gleu = evaluation.gleu.sentence_gleu([reference], hypothesis)
+			# Skip the segment timestamp.
+			session_result_file.write(f'{hash},,{speaker},{bleu},{gleu},{wer}\n')
+
+	segment_result_file.close()
+	machine_gt_out_file.close()
+	session_result_file.close()
+
+
+def is_doubled(arr: List[str]) -> bool:
+	"""
+	Checks whether a segment array of strings is doubled. That is,
+	the first half contains the same elements as the second half.
+	:param arr: List of strings.
+	:return: True if array is doubled, False otherwise.
+	"""
+	if len(arr) % 2 == 1:
+		return False
+
+	first = 0
+	second = int(len(arr) / 2)
+	while second < len(arr):
+		if arr[first] != arr[second]:
+			return False
+		first += 1
+		second += 1
+	return True
+
+
+def create_segments(seg_ts: List[float], data: Dict) -> List[str]:
+	"""
+	Takes a transcription dictionary and returns a list of segments.
+	Each segment are the words occurring between two timestamps.
+
+	:param seg_ts: List of timestamps denoting the start time of the segment.
+	:param data: Dictionary with keys: timestamps, speakerTags, words.
+	:return: List of segments, where each segment is a string.
+	"""
+	segments: List[str] = []
+
+	data_ts = np.asarray(data['timestamps'])
+	# Process everything except the last segment/bucket.
+	for i in range(0, len(seg_ts) - 1):
+		start = seg_ts[i]
+		end = seg_ts[i+1]
+		# Find all words with this segment's timestamps.
+		idx = np.where(np.logical_and(start <= data_ts, data_ts < end))[0]
+		# Grab the actual words.
+		if len(idx) > 0:
+			buffer = []
+			for j in idx:
+				buffer.append(data['words'][j])
+			sentence = ' '.join(buffer)
+			sentence = re.sub('\s+', ' ', sentence).strip()
+			segments.append(sentence)
+		# If we have no words, append an empty segment.
+		else:
+			segments.append('')
+
+	# Ignore the last segment because we don't know when it ends.
+	# That is, the ground truth can end at 20 minutes, but the audio goes until 30 minutes. As a result,
+	# we will have 10 minutes of machine transcript that will be considered wrong.
+	# Process the last segment/bucket.
+	# idx = np.where(seg_ts[-1] <= data_ts)[0]
+	# if len(idx) == 0:
+	# 	segments.append('')
+	# else:
+	# 	buffer = []
+	# 	for j in idx:
+	# 		buffer.append(data['words'][j])
+	# 	seg = ' '.join(buffer)
+	# 	segments.append(seg)
+
+	# segments = [preproc.util.canonicalize_sentence(x) for x in segments]
+	return segments
 
 
 def get_phrases(buckets: List, data: Dict) -> Dict[float, List[str]]:
@@ -115,29 +225,29 @@ def load_json(fqn: str):
 
 	timestamps = []
 	words = []
-	speakerTags = []
+	speaker_tags = []
 	# For each word, add it to our list.
 	for B in A['results']:
 		for C in B['alternatives']:
 			for D in C['words']:
 				# Get the core content.
-				startTime = float(D['startTime'].replace('s', ''))
-				timestamps.append(startTime)
+				start_time = float(D['startTime'].replace('s', ''))
+				timestamps.append(start_time)
 				word = D['word']
-				word = word.lower().replace('\'', '').replace('-', '')
+				word = preproc.util.canonicalize_word(word)
 				words.append(word)
 
 				# Add the speaker information.
 				if 'speakerTag' in D:
-					speakerTags.append(D['speakerTag'])
+					speaker_tags.append(D['speakerTag'])
 				else:
-					speakerTags.append('')
+					speaker_tags.append('')
 
-	result = {'timestamps': timestamps, 'words': words, 'speakerTags': speakerTags}
+	result = {'timestamps': timestamps, 'words': words, 'speaker_tags': speaker_tags}
 	return result
 
 
-def wer(pred: List[str], target: List[str]) -> float:
+def word_error_rate(pred: List[str], target: List[str]) -> float:
 	"""
 	Computes the Word Error Rate, defined as the edit distance between the
 	two provided sentences after tokenizing to words.
