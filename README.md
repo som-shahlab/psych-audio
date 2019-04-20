@@ -4,49 +4,35 @@
 
 ## 1 Introduction
 
-The aim of this project is to investigate whether automatic speech recognition can replace
-the manual transcription and coding process, with the hope of accelerating psychotherapy research.
-We collected a dataset containing 800 hours from psychotherapy sessions.
-We perform automatic transcription using publicly available cloud-based transcription
-services and analyze their performance compared to gold standard
-transcriptions by humans. Our analysis includes techniques from natural language processing.
+The aim of this project is to investigate whether automatic speech recognition can replace the manual transcription and coding process, with the hope of accelerating psychotherapy research. We collected a dataset containing 800 hours from psychotherapy sessions. We perform automatic transcription using publicly available cloud-based transcription services and analyze their performance compared to gold standard transcriptions by humans. Our analysis includes techniques from natural language processing.
 
 ## 2 Data Pre-Processing
 
 ### 2.1 Prerequisites
- [FFmpeg](https://www.ffmpeg.org/) contains various audio/visual
-encoding and decoding formats. To install FFmpeg:
+ [FFmpeg](https://www.ffmpeg.org/) contains various audio/visual encoding and decoding formats. To install FFmpeg:
 
   1. (Recommended) Download a static binary and place in home dir: https://johnvansickle.com/ffmpeg/
   2. Compile from source: https://www.ffmpeg.org/
-  
+
 Your FFmpeg binary can be entirely in user-space (i.e., you do not need sudo).
 
 
 ### 2.2 Generating FLAC Files
 
-In its raw form, our current audio files are in either WMA (windows media audio) or MP3
-format. As [recommended by Google Cloud](https://cloud.google.com/speech-to-text/docs/best-practices),
-we convert our files to [FLAC](https://en.wikipedia.org/wiki/FLAC). In general, you should try
-to use FLAC for all your audio processing tasks. The MP3 format loses data during the compression
-process. While this is okay for human hearing (MP3 minimizes human perceptual data loss),
-it may lose important information for machine hearing tasks.
+In its raw form, our current audio files are in either WMA (windows media audio) or MP3 format. As [recommended by Google Cloud](https://cloud.google.com/speech-to-text/docs/best-practices), we convert our files to [FLAC](https://en.wikipedia.org/wiki/FLAC). In general, you should try to use FLAC for all your audio processing tasks. The MP3 format loses data during the compression process. While this is okay for human hearing (MP3 minimizes human perceptual data loss), it may lose important information for machine hearing tasks.
 
-Below, we show the original (mp3/wma) specs of our data and the specs of our new FLAC files. 
-Most of these settings are [recommended](https://cloud.google.com/speech-to-text/docs/best-practices) by Google.
+Below, we show the original (mp3/wma) specs of our data and the specs of our new FLAC files.  Most of these settings are [recommended](https://cloud.google.com/speech-to-text/docs/best-practices) by Google.
 * Format: MP3/WMA -> FLAC
 * Sample Rate: 44,100 Hz -> 16,000 Hz
 * Channels: 2 (stereo) -> 1 (mono)
 
-First, open [preprocessing/01_generate_flac.py](preprocessing/01_generate_flac.py)
-and edit the global variables: `INPUT_DIR`, `OUTPUT_DIR`, and `ffmpeg`. Then, run:
+First, open [preprocessing/01_generate_flac.py](preprocessing/01_generate_flac.py) and edit the global variables: `INPUT_DIR`, `OUTPUT_DIR`, and `ffmpeg`. Then, run:
 
 ```bash
 python preprocessing/01_generate_flac.py
 ```
 
-If running on NERO or other compute cluster, submit your job with
-Slurm (see [preprocessing/01_slurm.sh](preprocessing/01_slurm.sh)).:
+If running on NERO or other compute cluster, submit your job with Slurm (see [preprocessing/01_slurm.sh](preprocessing/01_slurm.sh)).:
 
 ```bash
 sbatch scripts/01_slurm.sh
@@ -57,8 +43,7 @@ The output flac files will be placed in `OUTPUT_DIR`.
 
 ### 2.3 Ground Truth JSON
 
-The ground truth files are currently in TXT files, as delivered by the annotators.
-We need to convert these to JSON as a standardization step.
+The ground truth files are currently in TXT files, as delivered by the annotators. We need to convert these to JSON as a standardization step.
 
 1. Ensure that `gt_dir` is correct inside `preproc/config.py`.
 2. Run the following inside `preproc/`.
@@ -109,22 +94,53 @@ python 02_transcribe.py OUTPUT_DIR
 
 where `OUTPUT_DIR` is your desired *local* folder where to store the json transcription results. This script will also print the transcription progress.
 
-### 3.4 Compute Metrics
+## 4 Evaluation
 
-The final step is to compute metrics between the Google Speech API and the ground truth.
-At this point, we should have two directories (and what we named them):
+The final step is to compute metrics between the Google Speech API and the ground truth. At this point, we should have two directories (and what we named them):
 
 1. `machine`: Contains the Google Speech API output transcriptions as JSON format.
 2. `gt`: Contains the ground truth transcriptions as JSON format (see Section 2.3).
 
-To compute the metrics, run:
+These JSON files serve as the final output of our algorithm. We will never edit them again. All downstream metrics will be computed by reading these JSON files.
+
+### 4.1 Phrase vs Session Level
+
+Each ground truth transcript contains multiple *phrases*. Each phrase is a short set of words, spoken either by the therapist or the patient (the ground truth provides the speaker identity, i.e., patient/therapist for each phrase.
+
+A *session* is composed of multiple phrases from a single speaker. For example, "session-level patient" refers to the concatenation of all phrases said by the patient in a given therapy session. This can also be done for the therapist.
+
+Before computing any metrics, we must split the ground truth and prediction files into phrases.
 
 ```bash
-cd evaluation
-python compute_metrics.py MACHINE_DIR GT_DIR
-python average.py
+export PYTHONPATH=.
+python evaluation/phrase_level.py MACHINE_DIR GT_DIR
 ```
 
-The first script, `compute_metrics.py` computes metrics at a phrase-level. It also stores metadata such as the phrase start timestamp, speaker, and filename hash. This will procude `results.csv` which usually contains 10,000+ lines.
+where `MACHINE_DIR` is the directory of ASR-transcribed JSON files and `GT_DIR` is the directory of GT JSON files.
 
-The second script, `average.py` takes the `results.csv` file and prints out the final WER, BLEU, etc. metrics, as well as displays any relevant plots.
+Running the above script will produce `results/session.csv`, `results/phrase.csv`, and `results/text.txt`. The `text.txt` file contains each phrase, split by speaker as well. The `session.csv` and `phrase.csv` files contain the quant metrics described below.
+
+### 4.2 WER, BLEU, GLEU
+
+We use an initial set of metrics for computing ASR performance.
+
+1. Word Error Rate (WER)
+2. Bilingual Evaluation Understudy ([BLEU](https://en.wikipedia.org/wiki/BLEU))
+3. Google's Evaluation Understudy ([GLEU](https://www.nltk.org/_modules/nltk/translate/gleu_score.html))
+
+### 4.3 Clinical Unigrams
+
+Four clinicians hand-picked words that were critical for detecting mental health issues. We refer to these words as "clinical unigrams". The idea is that WER, BLEU, give equal weight to words, when in reality, words such as "suicide" are much more important and should be reflected in the performance metrics.
+
+```bash
+python evaluation/clinical_unigrams.py TEXT_FILE
+```
+
+where `TEXT_FILE` is the output from `evaluation/phrase_level.py`. It consists of the ground truth and predicted transcription, one on different lines. It is visually easy to compare sentences, as well as loading for automated processing.
+
+One naive approach is to compute the frequency of such unigrams in the ground truth, both at the phrase and session level. Then we compare the frequency in the predicted transcription.
+
+### 4.4 Embeddings
+
+Extracting embeddings is time consuming. Therefore, we first extract embeddings, save them to disk, then compute similarity metrics on these saved embeddings.
+
