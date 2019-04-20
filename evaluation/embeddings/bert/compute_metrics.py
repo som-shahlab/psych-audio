@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import scipy.spatial.distance
 
-
 PHRASE_RESULTS = '/vol0/psych_audio/ahaque/psych-audio/results/phrase.csv'
 
 
