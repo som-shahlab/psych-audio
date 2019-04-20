@@ -30,7 +30,6 @@ def main(args):
             gt_gids.append(gid)
 
 
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('text_file', type=str, help='Location of the combined GT/pred text file.')
