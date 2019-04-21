@@ -48,9 +48,9 @@ def main(args):
 
 	# Write embeddings to file.
 	print('Saving BERT preds...')
-	np.savez('bert_preds.npz', bert=pred_embeddings, gids=pred_gids, text=pred_sentences)
+	np.savez('bert_pred.npz', embeddings=pred_embeddings, gids=pred_gids, text=pred_sentences)
 	print('Saving BERT ground truths...')
-	np.savez('bert_gts.npz', bert=gt_embeddings, gids=gt_gids, text=gt_sentences)
+	np.savez('bert_gt.npz', embeddings=gt_embeddings, gids=gt_gids, text=gt_sentences)
 
 
 if __name__ == '__main__':

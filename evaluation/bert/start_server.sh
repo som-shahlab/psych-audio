@@ -1,0 +1,1 @@
+bert-serving-start -model_dir /vol0/psych_audio/ahaque/models/bert/uncased_L-12_H-768_A-12/ -num_worker 16 -max_seq_len 50

@@ -18,6 +18,9 @@ F = 300
 
 
 def main(args):
+	if not os.path.exists(args.output_dir):
+		os.makedirs(args.output_dir)
+
 	all_sentences, all_gids = evaluation.util.load_gt_pred_text_file(skip_empty=True)
 
 	if args.model_name == 'word2vec':
@@ -54,8 +57,12 @@ def main(args):
 	gt_gids = np.asarray(gids['gt'])
 
 	# Save the final npz files.
-	np.savez_compressed(f'{args.model_name}_pred.npz', w2v=pred_embeddings, gids=pred_gids, sentences=pred_sentences)
-	np.savez_compressed(f'{args.model_name}_gt.npz', w2v=gt_embeddings, gids=gt_gids, sentences=gt_sentences)
+	pred_fqn = os.path.join(args.output_dir, f'{args.model_name}_pred.npz')
+	gt_fqn = os.path.join(args.output_dir, f'{args.model_name}_gt.npz')
+	np.savez_compressed(pred_fqn, embeddings=pred_embeddings, gids=pred_gids, text=pred_sentences)
+	np.savez_compressed(gt_fqn, embeddings=gt_embeddings, gids=gt_gids, text=gt_sentences)
+	print(pred_fqn)
+	print(gt_fqn)
 
 
 def sentence_word2vec(model, sentence: str) -> Optional[np.ndarray]:
@@ -71,6 +78,8 @@ def sentence_word2vec(model, sentence: str) -> Optional[np.ndarray]:
 	for i, word in enumerate(words):
 		if word in model.vocab:
 			count += 1
+	if count == 0:
+		return None
 	embeddings = np.zeros((count, F), np.float32)
 	# Compute embeddings for each word.
 	idx = 0
@@ -86,4 +95,5 @@ def sentence_word2vec(model, sentence: str) -> Optional[np.ndarray]:
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument('model_name', type=str, choices=['word2vec', 'glove'])
+	parser.add_argument('output_dir', type=str, help='Location to save the output npz files.')
 	main(parser.parse_args())
