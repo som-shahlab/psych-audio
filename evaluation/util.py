@@ -36,6 +36,7 @@ def load_gt_pred_text_file(skip_empty=False) -> (Dict[str, List[str]], Dict[str,
 	skip_gids = set()  # skip any pairs where GT or pred is empty.
 	for i in range(len(lines)):
 		gid, sentence = tuple(lines[i].strip().split(','))
+		gid = int(gid)
 
 		if skip_empty:
 			if len(sentence) == 0:
