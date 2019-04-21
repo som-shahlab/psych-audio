@@ -10,6 +10,7 @@ import argparse
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+import evaluation.util
 from bert_serving.client import BertClient
 
 
@@ -24,30 +25,11 @@ def main(args):
 	print('Creating BERT client...')
 	bc = BertClient(check_length=False)
 
-	# Load the GT and prediction file.
-	print('Loading file...')
-	pred_sentences, pred_gids = [], []
-	gt_sentences, gt_gids = [], []
-	with open(args.text_file, 'r') as f:
-		lines = f.readlines()
-
-	print('Creating arrays...')
-	# BERT does not allow empty strings. Therefore we need to keep track of which idx each gt/pred belongs to.
-	skip_gids = set()  # skip any pairs where GT or pred is empty.
-	for i in range(len(lines)):
-		gid, sentence = tuple(lines[i].strip().split(','))
-		if len(sentence) == 0:
-			skip_gids.add(gid)
-
-		if gid in skip_gids:
-			continue
-
-		if i % 2 == 0:
-			pred_sentences.append(sentence)
-			pred_gids.append(gid)
-		else:
-			gt_sentences.append(sentence)
-			gt_gids.append(gid)
+	sentences, gids = evaluation.util.load_gt_pred_text_file(skip_empty=True)
+	pred_sentences = sentences['pred']
+	pred_gids = gids['pred']
+	gt_sentences = sentences['gt']
+	gt_gids = gids['gt']
 
 	if args.n_lines > 0:
 		pred_sentences = pred_sentences[:args.n_lines]
@@ -73,6 +55,5 @@ def main(args):
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
-	parser.add_argument('text_file', type=str, help='Location of the combined GT/pred text file.')
 	parser.add_argument('--n_lines', type=int, default=-1, help='Number of lines to process. Use -1 to process all.')
 	main(parser.parse_args())
