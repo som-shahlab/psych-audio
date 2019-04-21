@@ -5,8 +5,7 @@ import argparse
 import numpy as np
 import pandas as pd
 import scipy.spatial.distance
-
-PHRASE_RESULTS = '/vol0/psych_audio/ahaque/psych-audio/results/phrase.csv'
+import evaluation.util
 
 
 def main(args):
@@ -14,12 +13,7 @@ def main(args):
 	pred = np.load('bert_preds.npz')
 
 	# For each GID, find whether it was speaker or therapist.
-	df = pd.read_csv(PHRASE_RESULTS, sep=',')
-	gid2speaker = []
-	print('Building gid2speaker map...')
-	for _, row in df.iterrows():
-		gid2speaker.append(row['tag'])
-
+	gid2speaker = evaluation.util.load_gid2speaker()
 	gt_gids = np.asarray([int(x) for x in gt['gids']])  # Convert from string to int, since gids are ints.
 	T_dists = []
 	P_dists = []
