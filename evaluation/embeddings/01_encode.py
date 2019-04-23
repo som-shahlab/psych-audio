@@ -32,7 +32,7 @@ def main(args):
 		os.makedirs(args.output_dir)
 
 	# Load the sentences.
-	all_sentences, all_gids = evaluation.util.load_gt_pred_text_file(skip_empty=True)
+	paired = evaluation.util.load_paired_json(skip_empty=True)
 
 	# Select and load the embedding model.
 	print(f'Loading the {args.embedding_name} model...')
@@ -48,13 +48,15 @@ def main(args):
 	# Create the output accumulators.
 	sentences = {'gt': [], 'pred': []}
 	embeddings = {'gt': [], 'pred': []}
-	gids = {'gt': [], 'pred': []}
+	out_gids = {'gt': [], 'pred': []}
 
 	# Compute the embeddings.
-	for i in tqdm(range(len(all_sentences['gt']))):
+	paired_gids = list(paired.keys())
+	for i in tqdm(range(len(paired_gids)), desc='Embedding'):
+		gid = paired_gids[i]
 		# Compute embeddings for GT and pred.
-		embed_gt = encode_fn(args, model, keys, all_sentences['gt'][i])
-		embed_pred = encode_fn(args, model, keys, all_sentences['pred'][i])
+		embed_gt = encode_fn(args, model, keys, paired[gid]['gt'])
+		embed_pred = encode_fn(args, model, keys, paired[gid]['pred'])
 
 		# Embedding might be None if entire sentence is out-of-vocab.
 		if embed_gt is None or embed_pred is None:
@@ -63,13 +65,13 @@ def main(args):
 		# Append to list.
 		embeddings['gt'].append(embed_gt)
 		embeddings['pred'].append(embed_pred)
-		gids['gt'].append(int(all_gids['gt'][i]))
-		gids['pred'].append(int(all_gids['pred'][i]))
+		out_gids['gt'].append(int(gid))
+		out_gids['pred'].append(int(gid))
 
 	# Convert to numpy.
 	pred_sentences, gt_sentences = np.asarray(sentences['pred']), np.asarray(sentences['gt'])
 	pred_embeddings, gt_embeddings = np.asarray(embeddings['pred']), np.asarray(embeddings['gt'])
-	pred_gids, gt_gids = np.asarray(gids['pred']), np.asarray(gids['gt'])
+	pred_gids, gt_gids = np.asarray(out_gids['pred']), np.asarray(out_gids['gt'])
 
 	# Save the final npz files.
 	pred_fqn = os.path.join(args.output_dir, f'{args.embedding_name}_pred.npz')

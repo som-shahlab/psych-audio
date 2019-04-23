@@ -24,20 +24,29 @@ def main(args):
 	print('Creating BERT client...')
 	bc = BertClient(check_length=False)
 
-	sentences, gids = evaluation.util.load_gt_pred_text_file(skip_empty=True)
-	pred_sentences = sentences['pred']
-	pred_gids = gids['pred']
-	gt_sentences = sentences['gt']
-	gt_gids = gids['gt']
+	# Load the paired json file.
+	paired = evaluation.util.load_paired_json(skip_empty=True)
 
+	# Optionally, use a subset.
 	if args.n_lines > 0:
-		pred_sentences = pred_sentences[:args.n_lines]
-		pred_gids = np.asarray(pred_gids[:args.n_lines])
-		gt_sentences = gt_sentences[:args.n_lines]
-		gt_gids = np.asarray(gt_gids[:args.n_lines])
+		subset = {}
+		for i, gid in enumerate(paired.keys()):
+			if i >= args.n_lines:
+				break
+			subset[gid] = paired[gid]
+		del paired
+		paired = subset
+
+	# The BERT client uses lists for everything.
+	# Convert `paired` into list form.
+	pred_sentences, gt_sentences, gids = [], [], []
+	for gid in paired.keys():
+		gids.append(gid)
+		gt_sentences.append(paired[gid]['gt'])
+		pred_sentences.append(paired[gid]['pred'])
 
 	# Get embeddings.
-	print(f'Encoding {len(gt_gids)} sentences...')
+	print(f'Encoding {len(gids)} sentences...')
 	# Size: (N, SEQ_LEN, F)
 	# N: Number of sentences
 	# SEQ_LEN: Max sentence length.
@@ -55,8 +64,8 @@ def main(args):
 	print('Saving embeddings...')
 	pred_fqn = os.path.join(args.output_dir, 'bert_pred.npz')
 	gt_fqn = os.path.join(args.output_dir, 'bert_gt.npz')
-	np.savez_compressed(pred_fqn, embeddings=pred_embeddings, gids=pred_gids, text=pred_sentences)
-	np.savez_compressed(gt_fqn, embeddings=gt_embeddings, gids=gt_gids, text=gt_sentences)
+	np.savez_compressed(pred_fqn, embeddings=pred_embeddings, gids=gids, text=pred_sentences)
+	np.savez_compressed(gt_fqn, embeddings=gt_embeddings, gids=gids, text=gt_sentences)
 	print(pred_fqn)
 	print(gt_fqn)
 

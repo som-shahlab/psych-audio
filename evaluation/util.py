@@ -1,51 +1,29 @@
 """
 Utility functions for evaluation.
 """
-import pandas as pd
-from typing import List, Dict
-
-# Path to the CSV file containing phrase-level results. This is used to create the GID/speaker mapping.
-PHRASE_RESULTS = '/vol0/psych_audio/ahaque/psych-audio/results/phrase.csv'
+import json
 
 # Ground truth/predictions text file.
-TEXT_FILE = '/vol0/psych_audio/ahaque/psych-audio/results/text.txt'
+PAIRED_FILE = '/vol0/psych_audio/ahaque/psych-audio/results/paired.json'
 
 
-def load_gid2speaker():
-	# For each GID, find whether it was speaker or therapist.
-	df = pd.read_csv(PHRASE_RESULTS, sep=',')
-	gid2speaker = []
-	for _, row in df.iterrows():
-		gid2speaker.append(row['tag'])
-	return gid2speaker
-
-
-def load_gt_pred_text_file(skip_empty=False) -> (Dict[str, List[str]], Dict[str, List[str]]):
+def load_paired_json(skip_empty=False):
 	"""
-	Loads the text file containing the paired ground truth and predicted transcriptions.
-	:param skip_empty: If True, skips any sentence if the pred OR ground truth is empty.
-	:return sentences: Dictionary with keys 'gt', 'pred' and value=list of sentences.
-	:return gids: Dictionary with keys 'gt', 'pred' and value=List of global IDs.
+	Loads the paired json file. Optionally, remove sentences that have a blank GT or pred.
+	:return paired: Dictionary of gt/pred/gid/etc values.
 	"""
-	# Load the GT and prediction file.
-	sentences: Dict[str, List[str]] = {'gt': [], 'pred': []}
-	gids: Dict[str, List[str]] = {'gt': [], 'pred': []}
-	with open(TEXT_FILE, 'r') as f:
-		lines = f.readlines()
+	with open('results/paired.json') as f:
+		data = json.load(f)
 
-	skip_gids = set()  # skip any pairs where GT or pred is empty.
-	for i in range(len(lines)):
-		gid, sentence = tuple(lines[i].strip().split(','))
-		gid = int(gid)
-
-		if skip_empty:
-			if len(sentence) == 0:
-				skip_gids.add(gid)
+	# Remove empty sentences if desired.
+	if not skip_empty:
+		return data
+	else:
+		paired = {}
+		for gid in data.keys():
+			if len(data[gid]['gt']) == 0 or len(data[gid]['pred']) == 0:
 				continue
-			if gid in skip_gids:
-				continue
-
-		key = 'pred' if i % 2 == 0 else 'gt'
-		sentences[key].append(sentence)
-		gids[key].append(gid)
-	return sentences, gids
+			else:
+				paired[gid] = data[gid]
+		del data
+		return paired
