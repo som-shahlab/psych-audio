@@ -58,8 +58,6 @@ def main(args):
 	pred_sentences = np.asarray(pred_sentences)
 	gt_sentences = np.asarray(gt_sentences)
 
-	print(pred_embeddings.shape)
-
 	# Write embeddings to file.
 	print('Saving embeddings...')
 	pred_fqn = os.path.join(args.output_dir, 'bert_pred.npz')
