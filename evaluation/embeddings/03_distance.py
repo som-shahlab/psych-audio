@@ -1,4 +1,10 @@
-"""Computes metrics after BERT embeddings have been extracted."""
+"""
+Computes various distance-based metrics between the GT and predicted embedding vectors.
+
+Prerequisites:
+- Glove and/or Word2Vec embeddings computed for each GT and predicted sentence. You should have npz files.
+- BERT embeddings computed. This should also be a npz file.
+"""
 import os
 import sys
 import argparse
