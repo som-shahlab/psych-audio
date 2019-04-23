@@ -36,8 +36,6 @@ def main(args):
 		print(f'File does not exist: {args.result_csv}')
 		sys.exit(1)
 
-	# Load the result csv file.
-	result = pd.read_csv(args.result_csv, sep=',')
 
 	# Create mapping from hash -> dimensions.
 	# Load the metadata file.
@@ -108,5 +106,4 @@ def autodetect_names(data_dir: str) -> List[str]:
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
-	parser.add_argument('result_csv', type=str, help='Location of the result CSV file.')
 	main(parser.parse_args())

@@ -11,15 +11,13 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 import evaluation.util
+from evaluation.embeddings import config
 from bert_serving.client import BertClient
-
-# Max sequence length (words), as specified in `server/start.sh`.
-SEQ_LEN = 100
 
 
 def main(args):
-	if not os.path.exists(args.output_dir):
-		os.makedirs(args.output_dir)
+	if not os.path.exists(config.NPZ_DIR):
+		os.makedirs(config.NPZ_DIR)
 
 	print('Creating BERT client...')
 	bc = BertClient(check_length=False)
@@ -60,8 +58,8 @@ def main(args):
 
 	# Write embeddings to file.
 	print('Saving embeddings...')
-	pred_fqn = os.path.join(args.output_dir, 'bert_pred.npz')
-	gt_fqn = os.path.join(args.output_dir, 'bert_gt.npz')
+	pred_fqn = os.path.join(config.NPZ_DIR, 'bert_pred.npz')
+	gt_fqn = os.path.join(config.NPZ_DIR, 'bert_gt.npz')
 	np.savez_compressed(pred_fqn, embeddings=pred_embeddings, gids=gids, text=pred_sentences)
 	np.savez_compressed(gt_fqn, embeddings=gt_embeddings, gids=gids, text=gt_sentences)
 	print(pred_fqn)
@@ -70,6 +68,5 @@ def main(args):
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
-	parser.add_argument('output_dir', type=str, help='Location to save the output npz files.')
 	parser.add_argument('--n_lines', type=int, default=-1, help='Number of lines to process. Use -1 to process all.')
 	main(parser.parse_args())

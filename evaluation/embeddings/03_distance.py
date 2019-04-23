@@ -13,19 +13,14 @@ import sys
 import argparse
 import numpy as np
 import scipy.spatial.distance
+from evaluation.embeddings import config
 from tqdm import tqdm
-
-# Location of the saved embeddings (npz files).
-NPZ_DIR = '/vol0/psych_audio/ahaque/psych-audio/results/embeddings'
-
-# Where to save the output csv files.
-OUT_DIR = '/vol0/psych_audio/ahaque/psych-audio/results/dists'
 
 
 def main(args):
 	# Check if the files exist.
-	gt_fqn = os.path.join(NPZ_DIR, f'{args.embedding_name}_gt.npz')
-	pred_fqn = os.path.join(NPZ_DIR, f'{args.embedding_name}_pred.npz')
+	gt_fqn = os.path.join(config.NPZ_DIR, f'{args.embedding_name}_gt.npz')
+	pred_fqn = os.path.join(config.NPZ_DIR, f'{args.embedding_name}_pred.npz')
 	if not os.path.exists(gt_fqn):
 		print(f'Does not exist: {gt_fqn}')
 		sys.exit(1)
@@ -40,7 +35,7 @@ def main(args):
 	pred = np.load(pred_fqn)
 	pred_embeddings = pred['embeddings']
 
-	out_fqn = os.path.join(OUT_DIR, f'{args.embedding_name}.csv')
+	out_fqn = os.path.join(config.DISTANCES_DIR, f'{args.embedding_name}.csv')
 	with open(out_fqn, 'w') as f:
 		for i in tqdm(range(len(gt['gids']))):
 			gid = gt_gids[i]
