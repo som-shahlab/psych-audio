@@ -2,7 +2,7 @@
 This file computes the BERT embeddings for GT and predictions.
 
 Prerequisites:
-- Transcriptions text file (text.txt) resulting from `evaluation/phrase_level.py`.
+- Transcriptions text file (text.txt) resulting from `evaluation/01_extract_phrases.py`.
 """
 import os
 import sys
