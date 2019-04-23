@@ -35,12 +35,12 @@ def main(args):
 	all_sentences, all_gids = evaluation.util.load_gt_pred_text_file(skip_empty=True)
 
 	# Select and load the embedding model.
-	print(f'Loading the {args.model_name} model...')
-	if args.model_name == 'word2vec':
+	print(f'Loading the {args.embedding_name} model...')
+	if args.embedding_name == 'word2vec':
 		model = gensim.models.KeyedVectors.load_word2vec_format(WORD2VEC_MODEL_FQN, binary=True)
 		keys = model.vocab
 		encode_fn: Callable = encode_from_dict
-	elif args.model_name == 'glove':
+	elif args.embedding_name == 'glove':
 		model = load_glove()
 		keys = set(model.keys())
 		encode_fn: Callable = encode_from_dict
@@ -72,8 +72,8 @@ def main(args):
 	pred_gids, gt_gids = np.asarray(gids['pred']), np.asarray(gids['gt'])
 
 	# Save the final npz files.
-	pred_fqn = os.path.join(args.output_dir, f'{args.model_name}_pred.npz')
-	gt_fqn = os.path.join(args.output_dir, f'{args.model_name}_gt.npz')
+	pred_fqn = os.path.join(args.output_dir, f'{args.embedding_name}_pred.npz')
+	gt_fqn = os.path.join(args.output_dir, f'{args.embedding_name}_gt.npz')
 	np.savez_compressed(pred_fqn, embeddings=pred_embeddings, gids=pred_gids, text=pred_sentences)
 	np.savez_compressed(gt_fqn, embeddings=gt_embeddings, gids=gt_gids, text=gt_sentences)
 
@@ -102,7 +102,7 @@ def encode_from_dict(args, model, keys: Set[str], sentence: str) -> Optional[np.
 		return None
 
 	# Get embeddings for each word.
-	embeddings = np.zeros((count, F[args.model_name]), np.float32)
+	embeddings = np.zeros((count, F[args.embedding_name]), np.float32)
 	idx = 0
 	for word in words:
 		if word in keys:
@@ -128,6 +128,6 @@ def load_glove() -> Dict[str, np.ndarray]:
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
-	parser.add_argument('model_name', type=str, choices=['word2vec', 'glove'])
+	parser.add_argument('embedding_name', type=str, choices=['word2vec', 'glove'])
 	parser.add_argument('output_dir', type=str, help='Location to save the output npz files.')
 	main(parser.parse_args())
