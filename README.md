@@ -144,3 +144,4 @@ One naive approach is to compute the frequency of such unigrams in the ground tr
 
 Extracting embeddings is time consuming. Therefore, we first extract embeddings, save them to disk, then compute similarity metrics on these saved embeddings.
 
+#### 4.1 Word2Vec
