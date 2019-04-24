@@ -37,6 +37,7 @@ def main(args):
 
 	out_fqn = os.path.join(config.DISTANCES_DIR, f'{args.embedding_name}.csv')
 	with open(out_fqn, 'w') as f:
+		f.write('gid,value\n')
 		for i in tqdm(range(len(gt['gids']))):
 			gid = gt_gids[i]
 			a = gt_embeddings[i]

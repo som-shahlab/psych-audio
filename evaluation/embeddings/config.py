@@ -17,3 +17,15 @@ NPZ_DIR = '/vol0/psych_audio/ahaque/psych-audio/results/embeddings'
 
 # Where to save the output csv distance files.
 DISTANCES_DIR = '/vol0/psych_audio/ahaque/psych-audio/results/dists'
+
+# Path to the metadata file.
+META_FQN = '/vol0/psych_audio/jasa_format/metadata.tsv'
+
+# Which dimensions to analyze. That is, each item in the below list
+# will be a subsection of the table. i.e., Gender will be broken down into male/female (its unique values).
+DIMENSIONS = [
+	'Gender_ses1',
+	'Num_sess',
+	'Age_ses1',
+	'PHQ9_total_ses',
+]
