@@ -27,7 +27,7 @@ def main(args):
 	paired = evaluation.util.load_paired_json(skip_empty=False)
 
 	# Loop through all CSV files and organize the results by hash as the primary key.
-	hash2metrics = sort_csv_by_hash(paired)
+	hash2metrics = sort_csv_by_hash(args, paired)
 
 	# For each hash, determine the values for each dimension of interest.
 	hash2dim_values, unique_dim_vals = load_dimensions()
@@ -57,7 +57,8 @@ def main(args):
 				accumulator[embedding_name][dim][dim_val_for_this_hash] += dists
 
 	# For each dimension and unique value, print the mean.
-	results_fqn = os.path.join(config.DISTANCES_DIR, 'table2.csv')
+	out_dir = os.path.join(config.DISTANCES_DIR, args.distance)
+	results_fqn = os.path.join(out_dir, 'table2.csv')
 	with open(results_fqn, 'w') as f:
 		header = 'dim,val'
 		for name in config.F.keys():
@@ -74,7 +75,7 @@ def main(args):
 					else:
 						result += f',{n},{mean},{std}'
 				f.write(result + '\n')
-
+	print(results_fqn)
 
 def get_mean_std(embedding_name: str, accumulator: Dict, dim: str, val: int):
 	"""
@@ -126,18 +127,20 @@ def load_dimensions() -> (Dict[str, Dict[str, int]], Dict[str, List[int]]):
 	return hash2dims, unique_dim_vals
 
 
-def sort_csv_by_hash(paired: Dict) -> Dict[str, Dict[str, List[float]]]:
+def sort_csv_by_hash(args, paired: Dict) -> Dict[str, Dict[str, List[float]]]:
 	"""
 	For each hash, collects all distances for that hash. Note that a single hash
 	may consist of multiple GIDs.
 
+	:param args: Argparse namespace.
 	:param paired: Paired data from the json file.
 	:return hash2metrics: Dictionary with key: hash, and value: dictionary of embedding distances.
 	"""
 	hash2metrics = {}
 	# For each distance file, populate the accumulators based on the gid's hash value.
 	for embedding_name in config.F.keys():
-		csv_fqn = os.path.join(config.DISTANCES_DIR, f'{embedding_name}.csv')
+		out_dir = os.path.join(config.DISTANCES_DIR, args.distance)
+		csv_fqn = os.path.join(out_dir, f'{embedding_name}.csv')
 		df = pd.read_csv(csv_fqn, sep=',')
 
 		# Loop over each row in the CSV distance file and add to the accumulator.
@@ -158,4 +161,5 @@ def sort_csv_by_hash(paired: Dict) -> Dict[str, Dict[str, List[float]]]:
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
+	parser.add_argument('--distance', type=str, choices=['cosine', 'wasserstein'])
 	main(parser.parse_args())

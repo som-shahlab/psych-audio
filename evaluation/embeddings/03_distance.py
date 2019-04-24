@@ -12,6 +12,7 @@ import os
 import sys
 import argparse
 import numpy as np
+import scipy.stats
 import scipy.spatial.distance
 from evaluation.embeddings import config
 from tqdm import tqdm
@@ -35,7 +36,11 @@ def main(args):
 	pred = np.load(pred_fqn)
 	pred_embeddings = pred['embeddings']
 
-	out_fqn = os.path.join(config.DISTANCES_DIR, f'{args.embedding_name}.csv')
+	out_dir = os.path.join(config.DISTANCES_DIR, args.distance)
+	if not os.path.exists(out_dir):
+		os.makedirs(out_dir)
+
+	out_fqn = os.path.join(out_dir, f'{args.embedding_name}.csv')
 	with open(out_fqn, 'w') as f:
 		f.write('gid,value\n')
 		for i in tqdm(range(len(gt['gids']))):
@@ -57,7 +62,10 @@ def main(args):
 					b = b[np.sum(b, 1) > 0].mean(0)
 
 			# Compute the distance.
-			dist = scipy.spatial.distance.cosine(a, b)
+			if args.distance == 'cosine':
+				dist = scipy.spatial.distance.cosine(a, b)
+			elif args.distance == 'wasserstein':
+				dist = scipy.stats.wasserstein_distance(a, b)
 			f.write(f'{gid},{dist}\n')
 
 	print(out_fqn)
@@ -66,4 +74,5 @@ def main(args):
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument('embedding_name', type=str, choices=['word2vec', 'glove', 'bert'])
+	parser.add_argument('--distance', type=str, choices=['cosine', 'wasserstein'])
 	main(parser.parse_args())
