@@ -1,20 +1,19 @@
 """
-Computes segment-level metrics.
-A segment is defined as a single speaker, across multiple timestamps.
+This file takes the raw JSON output from the GT and Google API and
+creates a nice paired-sentence JSON file which contains both the ground
+truth and transcribed phrases, as well as some metadata.
+
+This standardized format is used for all downstream metrics computation.
 """
 import re
 import os
 import sys
 import json
-import nltk
 import argparse
-import Levenshtein
 import numpy as np
 from tqdm import tqdm
 from typing import List, Dict
-
 import preproc.util
-import evaluation.gleu
 
 
 def main(args):
@@ -25,15 +24,8 @@ def main(args):
 		print(f'Path does not exist: {args.gt_dir}')
 		sys.exit(0)
 
-	# Create the output file.
-	segment_result_file = open('results/phrase.csv', 'w')
-	machine_gt_out_file = open('results/text.txt', 'w')
-	session_result_file = open('results/session.csv', 'w')
-
-	# Write the headers.
-	header = 'gid,hash,ts,tag,bleu,gleu,wer'
-	session_result_file.write(header + '\n')
-	segment_result_file.write(header + '\n')
+	# Creates a single dictionary, indexed by GID, and contains values: gt sentence, pred sentence, etc.
+	paired: Dict[int, Dict] = {}
 
 	# Loop over all sessions.
 	ls = sorted(os.listdir(args.machine_dir))
@@ -61,61 +53,21 @@ def main(args):
 		machine_segments = create_segments(seg_ts, machine)
 		gt_segments = create_segments(seg_ts, gt)
 
-		# Create the accumulator for session-level stats.
-		session = {
-			'gt': {'T': [], 'P': []},
-			'machine': {'T': [], 'P': []}
-		}
-		# Compute sentence-level metrics.
+		# Create the final dictionary.
 		for j in range(len(gt_segments)):
-			speaker = seg_tag[j]
-			reference = gt_segments[j].split(' ')
-			hypothesis = machine_segments[j].split(' ')
-
-			# There's a bug where the hypothesis content is occasionally duplicated.
-			if is_doubled(hypothesis):
-				end = int(len(hypothesis) / 2)
-				hypothesis = hypothesis[:end]
-				machine_segments[j] = ' '.join(hypothesis)
-
-			# Update the session-level text.
-			if speaker not in session['gt'].keys():
-				continue
-
-			session['gt'][speaker] += reference
-			session['machine'][speaker] += hypothesis
-
-			# Compute segment-level stats.
-			bleu = nltk.translate.bleu_score.sentence_bleu([reference], hypothesis)
-			wer = word_error_rate(hypothesis, reference)
-			gleu = evaluation.gleu.sentence_gleu([reference], hypothesis)
-
-			# Write to files.
-			result = f'{gid},{hash},{seg_ts[j]},{speaker},{bleu},{gleu},{wer}'
-			segment_result_file.write(f'{result}\n')
-			machine_gt_out_file.write(f'{gid},{machine_segments[j]}' + '\n')
-			machine_gt_out_file.write(f'{gid},{gt_segments[j]}' + '\n')
+			value = {
+				'hash': hash,
+				'ts': seg_ts[j],
+				'speaker': seg_tag[j],
+				'gt': gt_segments[j],
+				'pred': machine_segments[j],
+			}
+			paired[gid] = value
 			gid += 1
 
-		# Compute session-level stats.
-		for aa in session.keys():
-			for bb in session[aa].keys():
-				sentence = ' '.join(session[aa][bb])
-				clean = preproc.util.canonicalize_sentence(sentence)
-				session[aa][bb] = clean.split(' ')
-
-		for speaker in ['T', 'P']:
-			reference = session['gt'][speaker]
-			hypothesis = session['machine'][speaker]
-			bleu = nltk.translate.bleu_score.sentence_bleu([reference], hypothesis)
-			wer = word_error_rate(hypothesis, reference)
-			gleu = evaluation.gleu.sentence_gleu([reference], hypothesis)
-			# Skip the segment timestamp.
-			session_result_file.write(f'{hash},,{speaker},{bleu},{gleu},{wer}\n')
-
-	segment_result_file.close()
-	machine_gt_out_file.close()
-	session_result_file.close()
+	# Write output json file.
+	with open('results/paired.json', 'w') as f:
+		json.dump(paired, f, indent=2)
 
 
 def is_doubled(arr: List[str]) -> bool:
@@ -245,29 +197,6 @@ def load_json(fqn: str):
 
 	result = {'timestamps': timestamps, 'words': words, 'speaker_tags': speaker_tags}
 	return result
-
-
-def word_error_rate(pred: List[str], target: List[str]) -> float:
-	"""
-	Computes the Word Error Rate, defined as the edit distance between the
-	two provided sentences after tokenizing to words.
-
-	:param pred: List of predicted words.
-	:param target: List of ground truth words.
-	:return:
-	"""
-	# build mapping of words to integers
-	b = set(pred + target)
-	word2char = dict(zip(b, range(len(b))))
-
-	# map the words to a char array (Levenshtein packages only accepts strings)
-	w1 = [chr(word2char[w]) for w in pred]
-	w2 = [chr(word2char[w]) for w in target]
-
-	d = Levenshtein.distance(''.join(w1), ''.join(w2))
-	wer = d / max(len(target), 1)
-	wer = min(wer, 1.0)
-	return wer
 
 
 if __name__ == '__main__':
