@@ -2,6 +2,7 @@
 Utility functions for evaluation.
 """
 import json
+import unidecode
 
 # Ground truth/predictions text file.
 PAIRED_FILE = '/vol0/psych_audio/ahaque/psych-audio/results/paired.json'
@@ -27,3 +28,18 @@ def load_paired_json(skip_empty=False):
 				paired[gid] = data[gid]
 		del data
 		return paired
+
+def canonicalize(sentence: str) -> str:
+	"""
+	Converts a sentence into standard, canonicalized format by removing
+	punctuation, unicode accent characters, etc.
+	
+	Args:
+		sentence (str): Input sentence.
+	
+	Returns:
+		str: Output, cleaned sentence.
+	"""
+	sentence = sentence.lower().strip().replace('\'', '')
+	sentence = unidecode.unidecode(sentence)
+	return sentence

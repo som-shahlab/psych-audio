@@ -14,6 +14,7 @@ import gensim.models
 from typing import *
 from tqdm import tqdm
 import evaluation.util
+import evaluation.embeddings.util
 from evaluation.embeddings import config
 
 
@@ -27,14 +28,7 @@ def main(args):
 
 	# Select and load the embedding model.
 	print(f'Loading the {args.embedding_name} model...')
-	if args.embedding_name == 'word2vec':
-		model = gensim.models.KeyedVectors.load_word2vec_format(config.WORD2VEC_MODEL_FQN, binary=True)
-		keys = model.vocab
-		encode_fn: Callable = encode_from_dict
-	elif args.embedding_name == 'glove':
-		model = load_glove()
-		keys = set(model.keys())
-		encode_fn: Callable = encode_from_dict
+	model, keys = evaluation.embeddings.util.load_embedding_model(args.embedding_name)
 
 	# Create the output accumulators.
 	sentences = {'gt': [], 'pred': []}
@@ -46,8 +40,8 @@ def main(args):
 	for i in tqdm(range(len(paired_gids)), desc='Embedding'):
 		gid = paired_gids[i]
 		# Compute embeddings for GT and pred.
-		embed_gt = encode_fn(args, model, keys, paired[gid]['gt'])
-		embed_pred = encode_fn(args, model, keys, paired[gid]['pred'])
+		embed_gt = evaluation.embeddings.util.encode_from_dict(args.embedding_name, model, keys, paired[gid]['gt'])
+		embed_pred = evaluation.embeddings.util.encode_from_dict(args.embedding_name, model, keys, paired[gid]['pred'])
 
 		# Embedding might be None if entire sentence is out-of-vocab.
 		if embed_gt is None or embed_pred is None:
@@ -72,51 +66,6 @@ def main(args):
 
 	print(pred_fqn)
 	print(gt_fqn)
-
-
-def encode_from_dict(args, model, keys: Set[str], sentence: str) -> Optional[np.ndarray]:
-	"""
-	Encodes a sentence using a dictionary-based embedding. That is, either word2vec or Glove.
-	A dictionary-based embedding has words as the keys and a numpy array as the value.
-
-	:param args: Argparse namespace.
-	:param model: Glove or word2vec model (usually a dictionary-like structure).
-	:param keys: Set of valid words in the model.
-	:param sentence: Sentence as a string.
-	:return embedding: Numpy array of the sentence embedding.
-	"""
-	words = sentence.split(' ')
-	# Count the number of words for which we have an embedding.
-	count = 0
-	for i, word in enumerate(words):
-		if word in keys:
-			count += 1
-	if count == 0:
-		return None
-
-	# Get embeddings for each word.
-	embeddings = np.zeros((count, F[args.embedding_name]), np.float32)
-	idx = 0
-	for word in words:
-		if word in keys:
-			embeddings[idx] = model[word]
-			idx += 1
-
-	# Mean pooling.
-	embedding = embeddings.mean(0)
-	return embedding
-
-
-def load_glove() -> Dict[str, np.ndarray]:
-	"""Loads the GloVe model."""
-	model: Dict[str, np.ndarray] = {}
-	with open(config.GLOVE_MODEL_FQN, 'r') as f:
-		for line in f:
-			tokens = line.strip().split(' ')
-			word = tokens[0]
-			vec = np.array([float(x) for x in tokens[1:]])
-			model[word] = vec
-	return model
 
 
 if __name__ == '__main__':
