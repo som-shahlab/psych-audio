@@ -3,6 +3,8 @@ d757ae27e128.json
 __pycache__/
 *.py[cod]
 *$py.class
+.idea/
+.vscode/
 
 # C extensions
 *.so
