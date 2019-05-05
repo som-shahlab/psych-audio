@@ -156,7 +156,9 @@ Take note of the location of the .bin file and update the `WORD2VEC_MODEL_FQN` v
 
 Download GloVe: [[zip](http://nlp.stanford.edu/data/glove.840B.300d.zip)] [[website](https://nlp.stanford.edu/projects/glove/)] (Common Crawl, 840B tokens, 2.0 GB)
 
-Once downloaded, uncompress it.
+Once downloaded, uncompress it: `unzip glove.840B.300d.zip`
+
+Take note of the location of the .bin file and update the `GLOVE_MODEL_FQN` variable inside `evaluation/embeddings/config.py`.
 
 #### 4.4.3   BERT
 

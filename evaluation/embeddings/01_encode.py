@@ -40,8 +40,8 @@ def main(args):
 	for i in tqdm(range(len(paired_gids)), desc='Embedding'):
 		gid = paired_gids[i]
 		# Compute embeddings for GT and pred.
-		embed_gt = evaluation.embeddings.util.encode_from_dict(args, model, keys, paired[gid]['gt'])
-		embed_pred = evaluation.embeddings.util.encode_from_dict(args, model, keys, paired[gid]['pred'])
+		embed_gt = evaluation.embeddings.util.encode_from_dict(args.embedding_name, model, keys, paired[gid]['gt'])
+		embed_pred = evaluation.embeddings.util.encode_from_dict(args.embedding_name, model, keys, paired[gid]['pred'])
 
 		# Embedding might be None if entire sentence is out-of-vocab.
 		if embed_gt is None or embed_pred is None:
