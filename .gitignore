@@ -105,3 +105,14 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+.idea/misc.xml
+.idea/modules.xml
+.idea/psych-audio.iml
+.idea/other.xml
+.idea/workspace.xml
+.idea/vcs.xml
+.idea/codeStyles/codeStyleConfig.xml
+.idea/inspectionProfiles/Project_Default.xml
+.idea/dictionaries/ahaque.xml
+.vscode/launch.json
+.vscode/settings.json
