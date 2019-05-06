@@ -27,12 +27,12 @@ Output:
     e.g. S1_020201_P1_07.25.16.flac, S2_020201_P1_08.08.16.flac, ...
 """
 import os
-import preproc.config
 import string
 import argparse
 import subprocess
 import multiprocessing
 from typing import Tuple
+import preproc.config
 
 
 def main(args: argparse.Namespace):
@@ -47,11 +47,11 @@ def main(args: argparse.Namespace):
     # Recursively get list of all audio filenames and their desired output filename.
     workload = []
     print('Gathering input filenames...')
-    for path, _, filenames in os.walk(preproc.raw_audio_dir):
+    for path, _, filenames in os.walk(preproc.config.raw_audio_dir):
         for filename in filenames:
             # Get the base filename without the audio extension.
             basename = '.'.join(filename.split('.')[:-1])
-            source_fqn = os.path.join(preproc.raw_audio_dir, path, filename)  # fqn: Fully-qualified name.
+            source_fqn = os.path.join(preproc.config.raw_audio_dir, path, filename)  # fqn: Fully-qualified name.
             dest_fqn = os.path.join(args.output_dir, f'{basename}.flac')
             # If we're continuing an interrupted job, we should skip any completed files.
             if args.resume:
@@ -79,7 +79,7 @@ def worker(item: Tuple[str, str]):
     # -i = input, -c:a = audio codec, -ac = # output channels, -ar = output sampling rate
     # Note that Google recommends 16,000 Hz. This is because their models are trained on 16,000.
     # Anything higher (e.g. 44kHz) significantly increases the filesize without any performance gains.
-    cmd_template = string.Template(f'{preproc.03_create_gt_jsonconfig.ffmpeg} -i \"$source\" -c:a flac -ac 1 -ar 16000 \"$dest\"')
+    cmd_template = string.Template(f'{preproc.config.ffmpeg} -i \"$source\" -c:a flac -ac 1 -ar 16000 \"$dest\"')
     cmd = cmd_template.substitute(source=source_fqn, dest=dest_fqn)
 
     # Execute on command line.
