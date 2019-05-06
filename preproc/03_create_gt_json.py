@@ -10,27 +10,27 @@ import pandas as pd
 from typing import Dict, Tuple, List
 from tqdm import tqdm
 from pandas import DataFrame
-import util
-import config
+import preproc.util
+import preproc.config
 
 
 def main(args):
 	# Ensure the metadata file is valid.
 	if not args.no_meta_check:
-		if not util.metadata_file_is_clean(config.meta_fqn):
-			print(f'File contains errors: {config.meta_fqn}')
+		if not preproc.util.metadata_file_is_clean(preproc.config.meta_fqn):
+			print(f'File contains errors: {preproc.config.meta_fqn}')
 			return
 		else:
 			print('Metadata file OK.')
 
-	meta = pd.read_csv(config.meta_fqn, sep='\t')
+	meta = pd.read_csv(preproc.config.meta_fqn, sep='\t')
 
 	# Create the audio filename to has mapping.
 	audio2hash = create_audio2hash_map(meta)
-	trans_filenames = sorted(os.listdir(config.gt_dir))
+	trans_filenames = sorted(os.listdir(preproc.config.gt_dir))
 	for filename in tqdm(trans_filenames):
 		if filename == '.DS_Store': continue
-		audio_filenames, results = gt2dict(os.path.join(config.gt_dir, filename))
+		audio_filenames, results = gt2dict(os.path.join(preproc.config.gt_dir, filename))
 
 		# Some transcription filenames have two or more audio files associated with them.
 		# We need to check which hash actually works.
@@ -73,7 +73,7 @@ def create_audio2hash_map(meta: DataFrame) -> Dict[str, str]:
 		hash = row['hash']
 
 		for path in paths:
-			filename = util.remove_extension(os.path.basename(path))
+			filename = preproc.util.remove_extension(os.path.basename(path))
 			mapping[filename] = hash
 
 	return mapping
@@ -151,15 +151,15 @@ def get_subphrases(line: str) -> List[Tuple[str, str]]:
 	# Find all timestamps on this line.
 	# Finds: `[TIME: MM:SS]:` with or without the leading or ending colon.
 	patterns = [
-		('\[+TIME: ([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]\] ', len('[TIME: MM:SS]')),
-		('\[+TIME: ([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]\]: ', len('[TIME: MM:SS]:')),
-		('\[+TIME ([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]\]', len('[TIME MM:SS]:')),
-		('\[+TIME ([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]\]:', len('[TIME MM:SS]:')),
+		(r'\[+TIME: ([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]\] ', len('[TIME: MM:SS]')),
+		(r'\[+TIME: ([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]\]: ', len('[TIME: MM:SS]:')),
+		(r'\[+TIME ([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]\]', len('[TIME MM:SS]:')),
+		(r'\[+TIME ([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]\]:', len('[TIME MM:SS]:')),
 	]
 
 	meta = []
 	for item in patterns:
-		p, size = item
+		p, _ = item
 		idxs = [m.span() for m in re.finditer(p, line)]
 		meta += idxs
 	meta = list(reversed(meta))
@@ -181,7 +181,7 @@ def get_subphrases(line: str) -> List[Tuple[str, str]]:
 			if i == len(meta) - 1:
 				text = line[text_start:]
 			else:
-				next_idx, next_size = meta[i + 1]
+				next_idx, _ = meta[i + 1]
 				text = line[text_start:next_idx]
 
 			item = (ts, text)
