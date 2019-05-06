@@ -5,14 +5,14 @@ locally, to the machine running this script.
 """
 import os
 import json
-import config
 import argparse
 from tqdm import tqdm
+from google.cloud import speech
 from google.cloud import storage
-from google.cloud import speech_v1p1beta1 as speech
+from google.cloud.speech import enums
+from google.cloud.speech import types
 from google.protobuf.json_format import MessageToDict
-from google.cloud.speech_v1p1beta1 import SpeechClient
-from google.cloud.speech_v1p1beta1.types import RecognitionConfig, RecognitionAudio
+import gcloud.config
 
 
 def main(args):
@@ -27,7 +27,7 @@ def main(args):
 
 	# List all audio files in the bucket.
 	storage_client = storage.Client()
-	bucket = storage_client.get_bucket(config.BUCKET_NAME)
+	bucket = storage_client.get_bucket(gcloud.config.BUCKET_NAME)
 	blobs = bucket.list_blobs()
 	# `blobs` is a list of Google blob objects. We need to extract filenames.
 	filenames = [b.name for b in blobs]
@@ -36,8 +36,8 @@ def main(args):
 	# For a list of configuration options, see the Google Speech API documentation:
 	# https://cloud.google.com/speech-to-text/docs/word-confidence
 	client = speech.SpeechClient()
-	rc = RecognitionConfig(
-		encoding=speech.enums.RecognitionConfig.AudioEncoding.FLAC,
+	rc = types.RecognitionConfig(
+		encoding=enums.RecognitionConfig.AudioEncoding.FLAC,
 		sample_rate_hertz=16000,
 		language_code='en-US',
 		enable_speaker_diarization=True,
@@ -48,10 +48,10 @@ def main(args):
 	)
 
 	print(f'Saving json output to: {args.output_dir}')
-	print(f'Transcribing {len(filenames)} files from bucket: {config.BUCKET_NAME}')
+	print(f'Transcribing {len(filenames)} files from bucket: {gcloud.config.BUCKET_NAME}')
 	for filename in tqdm(filenames):
 		# Run ASR.
-		audio = RecognitionAudio(uri=f'gs://{config.BUCKET_NAME}/{filename}')
+		audio = types.RecognitionAudio(uri=f'gs://{gcloud.config.BUCKET_NAME}/{filename}')
 		ret = transcribe(client, rc, audio)
 
 		# Save the output to json.
@@ -60,7 +60,7 @@ def main(args):
 			json.dump(ret, pointer, indent=2, separators=(',', ': '))
 
 
-def transcribe(client: SpeechClient, rc: RecognitionConfig, audio: RecognitionAudio):
+def transcribe(client: speech.SpeechClient, rc: types.RecognitionConfig, audio: types.RecognitionAudio):
 	"""
 	Makes the API call to transcribe `audio`.
 
@@ -76,7 +76,7 @@ def transcribe(client: SpeechClient, rc: RecognitionConfig, audio: RecognitionAu
 
 
 if __name__ == '__main__':
-	os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = config.KEY
+	os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = gcloud.config.KEY
 	parser = argparse.ArgumentParser()
 	parser.add_argument('output_dir', type=str, help='Location for the transcription output.')
 	args = parser.parse_args()
