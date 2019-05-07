@@ -3,7 +3,8 @@ This script uploads a folder of files onto Google cloud.
 
 Prerequisites:
 - You must have a google cloud API key (json file).
-- You must have a single, local folder containing multiple files. No nested folders allowed.
+- data_dir: You must have a single folder containing multiple files. No nested folders allowed. This is a superset of `exlude_dir`.
+- exclude_dir (optional): Single folder containing multiple files to exclude from `data_dir`.
 """
 import os
 import sys
@@ -42,7 +43,7 @@ if __name__ == '__main__':
 	# Google python API requires we set the OS environment variable.
 	os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = gcloud.config.KEY
 	parser = argparse.ArgumentParser()
-	parser.add_argument('data_dir', type=str, help='Location of files to upload.')
+	parser.add_argument('data_dir', type=str, help='Location of files to upload. This is a superset of `exclude_dir`.')
 	parser.add_argument('exclude_dir', type=str, default='', help='Location of folder containing exclude files.')
 	args = parser.parse_args()
 	main(args)
