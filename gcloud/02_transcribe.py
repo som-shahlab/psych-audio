@@ -48,6 +48,10 @@ def main(args):
 	print(f'Saving json output to: {args.output_dir}')
 	print(f'Transcribing {len(filenames)} files from bucket: {gcloud.config.BUCKET_NAME}')
 	for filename in tqdm(filenames):
+		# If we've already processed this file, skip.
+		if os.path.exists(output_fqn):
+			continue
+			
 		# Run ASR.
 		audio = speech.types.RecognitionAudio(uri=f'gs://{gcloud.config.BUCKET_NAME}/{filename}')
 		ret = transcribe(client, rc, audio)
