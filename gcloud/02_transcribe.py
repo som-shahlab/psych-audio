@@ -7,10 +7,8 @@ import os
 import json
 import argparse
 from tqdm import tqdm
-from google.cloud import speech
 from google.cloud import storage
-from google.cloud.speech import enums
-from google.cloud.speech import types
+from google.cloud import speech_v1p1beta1 as speech
 from google.protobuf.json_format import MessageToDict
 import gcloud.config
 
@@ -36,14 +34,14 @@ def main(args):
 	# For a list of configuration options, see the Google Speech API documentation:
 	# https://cloud.google.com/speech-to-text/docs/word-confidence
 	client = speech.SpeechClient()
-	rc = types.RecognitionConfig(
+	rc = speech.types.RecognitionConfig(
 		encoding=enums.RecognitionConfig.AudioEncoding.FLAC,
 		sample_rate_hertz=16000,
 		language_code='en-US',
-		enable_speaker_diarization=True,
 		enable_word_confidence=True,
 		enable_word_time_offsets=True,
-		diarization_speaker_count=2,
+		enable_speaker_diarization=True,
+    	diarization_speaker_count=2,
 		model='video',
 	)
 
@@ -51,7 +49,7 @@ def main(args):
 	print(f'Transcribing {len(filenames)} files from bucket: {gcloud.config.BUCKET_NAME}')
 	for filename in tqdm(filenames):
 		# Run ASR.
-		audio = types.RecognitionAudio(uri=f'gs://{gcloud.config.BUCKET_NAME}/{filename}')
+		audio = speech.types.RecognitionAudio(uri=f'gs://{gcloud.config.BUCKET_NAME}/{filename}')
 		ret = transcribe(client, rc, audio)
 
 		# Save the output to json.
@@ -60,7 +58,7 @@ def main(args):
 			json.dump(ret, pointer, indent=2, separators=(',', ': '))
 
 
-def transcribe(client: speech.SpeechClient, rc: types.RecognitionConfig, audio: types.RecognitionAudio):
+def transcribe(client: speech.SpeechClient, rc: speech.types.RecognitionConfig, audio: speech.types.RecognitionAudio):
 	"""
 	Makes the API call to transcribe `audio`.
 
