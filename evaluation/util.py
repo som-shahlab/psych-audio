@@ -29,6 +29,7 @@ def load_paired_json(skip_empty=False):
 		del data
 		return paired
 
+
 def canonicalize(sentence: str) -> str:
 	"""
 	Converts a sentence into standard, canonicalized format by removing
