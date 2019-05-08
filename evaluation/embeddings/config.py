@@ -19,7 +19,7 @@ NPZ_DIR = '/vol0/psych_audio/ahaque/psych-audio/results/embeddings'
 DISTANCES_DIR = '/vol0/psych_audio/ahaque/psych-audio/results/dists'
 
 # Path to the metadata file.
-META_FQN = '/vol0/psych_audio/jasa_format/metadata.tsv'
+META_FQN = '/vol0/psych_audio/scotty/results/scotty_phq9_diffs_with_paths.tsv'
 
 # Which dimensions to analyze. That is, each item in the below list
 # will be a subsection of the table. i.e., Gender will be broken down into male/female (its unique values).
