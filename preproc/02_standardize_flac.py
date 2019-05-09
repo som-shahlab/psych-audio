@@ -11,20 +11,20 @@ import string
 import argparse
 import subprocess
 import pandas as pd
-import util
-import config
+import preproc.util
+import preproc.config
 
 
 def main(args):
     # Maintains the original filename -> hashed filename mapping.
-    meta = pd.read_csv(config.meta_fqn, sep='\t')
+    meta = pd.read_csv(preproc.config.meta_fqn, sep='\t')
 
     # Used for concating two files.
     cmd_template = string.Template('ffmpeg -i \"$infile1\" -i \"$infile2\" -c:a flac -ac 1 -ar 16000 '
                                    '-filter_complex \'[0:0][1:0]concat=n=2:v=0:a=1[out]\' -map \'[out]\' $outfile')
 
     # For each metadata row, copy and rename the audio file.
-    for i, row in meta.iterrows():
+    for _, row in meta.iterrows():
         hash = row['hash']
         path = str(row['audio_path'])
 
@@ -39,8 +39,8 @@ def main(args):
             # We have 2 paths. Need to concat.
             paths = path.split(';')
             input_files = []
-            for i, path in enumerate(paths):
-                filename = util.remove_extension(os.path.basename(path))
+            for _, path in enumerate(paths):
+                filename = preproc.util.remove_extension(os.path.basename(path))
                 fqn = os.path.join(args.input_dir, f'{filename}.flac')
                 input_files.append(fqn)
 
@@ -50,8 +50,8 @@ def main(args):
             print(f'(Concat) {out_fqn}')
         else:
             # Handle the case where there's only one file. Simply copy it to our target directory.
-            filename = util.remove_extension(os.path.basename(path))
-            if filename in config.malformed_files:
+            filename = preproc.util.remove_extension(os.path.basename(path))
+            if filename in preproc.config.malformed_files:
                 print(f'Skipping malformed: {filename}')
                 continue
             source_fqn = os.path.join(args.input_dir, f'{filename}.flac')

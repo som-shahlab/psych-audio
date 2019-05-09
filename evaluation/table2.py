@@ -19,7 +19,7 @@ dimensions = [
 ]
 
 #   Path to the meta FQN.
-META_FQN = '/vol0/psych_audio/jasa_format/metadata.tsv'
+META_FQN = '/vol0/psych_audio/scotty/results/scotty_phq9_diffs_with_paths.tsv'
 SEGMENT_METRICS = '../results/segment.csv'
 SESSION_METRICS = '../results/session.csv'
 
