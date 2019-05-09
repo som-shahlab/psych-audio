@@ -21,6 +21,12 @@ DISTANCES_DIR = '/vol0/psych_audio/ahaque/psych-audio/results/dists'
 # Path to the metadata file.
 META_FQN = '/vol0/psych_audio/scotty/results/scotty_phq9_diffs_with_paths.tsv'
 
+# Path to the paired.json corpus and predictions file.
+PAIRED_FQN = 'todo'
+
+# Path to the vocabulary file of all possible words.
+VOCAB_FQN = '/usr/share/dict/words'
+
 # Which dimensions to analyze. That is, each item in the below list
 # will be a subsection of the table. i.e., Gender will be broken down into male/female (its unique values).
 DIMENSIONS = [

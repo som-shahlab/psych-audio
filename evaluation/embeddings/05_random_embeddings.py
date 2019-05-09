@@ -22,10 +22,6 @@ import evaluation.embeddings.util
 embedding_dir = '/home/ahaque/Desktop/random/'
 
 
-# Location of the random words file. This file contains 1 word per line.
-word_file = '/usr/share/dict/words'
-
-
 def main(args):
 	# Create the output dir.
 	if not os.path.exists(embedding_dir):
@@ -129,15 +125,8 @@ def generate_embeddings(args, bc=None):
 		print(f'Loading the {args.embedding_name} model...')
 		model, keys = evaluation.embeddings.util.load_embedding_model(args.embedding_name)
 
-	# Load the vocabulary.
-	with open(word_file, 'r') as f:
-		vocab = [x.strip().lower() for x in f.readlines()]
-
 	# Generate N sentences.
-	sentences = []
-	for _ in range(args.n):
-		s = generate_sentence(vocab)
-		sentences.append(s)
+	sentences = evaluation.embeddings.util.random_sentences(args.n)
 
 	if args.embedding_name == 'bert':
 		embeddings = bc.encode(sentences)
@@ -154,28 +143,6 @@ def generate_embeddings(args, bc=None):
 	fqn = os.path.join(embedding_dir, f'{args.embedding_name}.npy')
 	np.save(fqn, embeddings)
 	print(fqn)
-
-	
-
-def generate_sentence(vocab: List[str]) -> str:
-	"""
-	Generates a random English sentence.
-	:return sentence: Generated sentence.
-	"""
-	# Determine sentence length.
-	n_words = int(np.clip(np.random.normal(8, 2), 0, 15))
-
-	# Select words.
-	vocab_size = len(vocab)
-	idx = np.random.choice(np.arange(0, vocab_size), (n_words,), replace=True)
-
-	# Compose the sentence.
-	sentence = ''
-	for i in idx:
-		sentence += f' {vocab[i]}'
-
-	sentence = evaluation.util.canonicalize(sentence)
-	return sentence
 
 
 if __name__ == '__main__':
