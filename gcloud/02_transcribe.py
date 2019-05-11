@@ -10,6 +10,7 @@ from tqdm import tqdm
 from google.cloud import storage
 from google.cloud import speech_v1p1beta1 as speech
 from google.protobuf.json_format import MessageToDict
+from typing import *
 import gcloud.config
 
 
@@ -28,14 +29,14 @@ def main(args):
 	bucket = storage_client.get_bucket(gcloud.config.BUCKET_NAME)
 	blobs = bucket.list_blobs()
 	# `blobs` is a list of Google blob objects. We need to extract filenames.
-	filenames = [b.name for b in blobs]
+	original_filenames = [b.name for b in blobs]
 
 	# Create a single Google API client and configuration to reuse.
 	# For a list of configuration options, see the Google Speech API documentation:
 	# https://cloud.google.com/speech-to-text/docs/word-confidence
 	client = speech.SpeechClient()
 	rc = speech.types.RecognitionConfig(
-		encoding=enums.RecognitionConfig.AudioEncoding.FLAC,
+		encoding=speech.enums.RecognitionConfig.AudioEncoding.FLAC,
 		sample_rate_hertz=16000,
 		language_code='en-US',
 		enable_word_confidence=True,
@@ -45,19 +46,23 @@ def main(args):
 		model='video',
 	)
 
+	# Skip already completed files.
+	filenames: List[str] = []
+	for filename in original_filenames:
+		output_fqn = os.path.join(args.output_dir, filename.replace('.flac', '.json'))
+		if os.path.exists(output_fqn):
+			continue
+		else:
+			filenames.append(filename)
+		
 	print(f'Saving json output to: {args.output_dir}')
 	print(f'Transcribing {len(filenames)} files from bucket: {gcloud.config.BUCKET_NAME}')
 	for filename in tqdm(filenames):
-		# If we've already processed this file, skip.
-		if os.path.exists(output_fqn):
-			continue
-			
 		# Run ASR.
 		audio = speech.types.RecognitionAudio(uri=f'gs://{gcloud.config.BUCKET_NAME}/{filename}')
 		ret = transcribe(client, rc, audio)
 
 		# Save the output to json.
-		output_fqn = os.path.join(args.output_dir, filename.replace('.flac', '.json'))
 		with open(output_fqn, 'w') as pointer:
 			json.dump(ret, pointer, indent=2, separators=(',', ': '))
 
