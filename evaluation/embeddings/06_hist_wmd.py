@@ -46,6 +46,9 @@ def main(args):
 	print(f'n corpus: {len(corpus_dists)}')
 	print(f'n random: {len(random_dists)}')
 
+	out_fqn = os.path.join(args.output_dir, 'wmd.png')
+	eeu.plot_histogram(out_fqn, random_dists, corpus_dists)
+
 
 def pairwise_wmd(model, sentences: List[str]) -> np.ndarray:
 	"""

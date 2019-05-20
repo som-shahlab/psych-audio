@@ -4,6 +4,7 @@ Contains various util functions for loading and computing embeddings.
 import gensim
 import numpy as np
 from typing import *
+import scipy.spatial.distance
 import matplotlib.pyplot as plt
 import evaluation.util
 import evaluation.embeddings.util
@@ -87,18 +88,25 @@ def batch_distance(matrix: np.ndarray) -> np.ndarray:
 	raise NotImplementedError
 
 
-def batch_encode(sentences: List[str], embedding_name: str) -> np.ndarray:
+def batch_encode(embedding_name: str, model: Dict[str, np.ndarray], keys: Set[str], sentences: List[str]) -> np.ndarray:
 	"""
-	Computes embeddings for multiple sentences.
+	Encodes a List of sentences into multiple embeddings.
 	
 	Args:
+		embedding_name (str): 'word2vec' or 'glove'
+		model (Dict[str, np.ndarray]): KeyedVector word2vec model.
+		keys (Set[str]): Set of words in the model's vocabulary.
 		sentences (List[str]): List of sentences.
-		embedding_name (str): Which embedding to use.
 	
 	Returns:
-		embedding (np.ndarray): (N, embedding_size) matrix of embeddings.
+		np.ndarray: (N, F) embedding matrix.
 	"""
-	raise NotImplementedError
+	n = len(sentences)
+	embeddings = np.zeros((n, config.F[embedding_name]))
+	for i in range(n):
+		embed = encode_from_dict(embedding_name, model, keys, sentences[i])
+		embeddings[i] = embed
+	return embeddings
 
 
 def load_embedding_model(embedding_name: str) -> (Dict, Set[str]):
@@ -209,3 +217,10 @@ def plot_histogram(fqn: str, random_dists: np.ndarray, corpus_dists: np.ndarray)
 	axes.set_ylabel('Probability')
 	axes.legend()
 	plt.savefig(fqn, dpi=300)
+
+def pairwise_metric(A: np.ndarray, metric: str):
+	"""Computes the pairwise distance and returns a vector of distances."""
+	dists = scipy.spatial.distance.cdist(A, A, metric=metric)
+	idx1, idx2 = np.nonzero(np.tril(dists))  # Only time dist=0 is if exact same sentence, which we want to discard.
+	flat = dists[idx1, idx2]
+	return flat
