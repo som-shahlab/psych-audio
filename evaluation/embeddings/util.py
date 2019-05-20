@@ -1,6 +1,7 @@
 """
 Contains various util functions for loading and computing embeddings.
 """
+import math
 import gensim
 import numpy as np
 from typing import *
@@ -215,11 +216,21 @@ def plot_histogram(fqn: str, random_dists: np.ndarray, corpus_dists: np.ndarray,
 	axes.set_xlabel('Distance')
 	axes.set_ylabel('Probability')
 	axes.legend()
-	plt.savefig(fqn, dpi=300)
+	plt.savefig(fqn, dpi=400)
+
 
 def pairwise_metric(A: np.ndarray, metric: str):
 	"""Computes the pairwise distance and returns a vector of distances."""
 	dists = scipy.spatial.distance.cdist(A, A, metric=metric)
 	idx1, idx2 = np.nonzero(np.tril(dists))  # Only time dist=0 is if exact same sentence, which we want to discard.
 	flat = dists[idx1, idx2]
-	return flat
+
+	# Remove nans, inf, etc.
+	clean = []
+	for val in flat:
+		if math.isnan(val) or val <= 0 or math.isinf(val):
+			continue
+		else:
+			clean.append(val)
+	clean = np.asarray(clean)
+	return clean

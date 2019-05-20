@@ -4,17 +4,21 @@ Creates a Table 2 using session-level data.
 import os
 import sys
 import nltk
+import math
 import argparse
 import Levenshtein
 import numpy as np
 import pandas as pd
 from typing import *
 from tqdm import tqdm
+import scipy.spatial.distance
+import gensim.downloader as api
 
 import evaluation.util
 from evaluation.embeddings import config
+import evaluation.embeddings.util as eeu
 
-METRIC_NAMES = ['WER', 'BLEU']
+METRIC_NAMES = ['WER', 'BLEU', 'COSINE', 'EMD']
 SPEAKERS = ['T', 'P']
 
 
@@ -64,7 +68,7 @@ def main(args):
 					accumulator[speaker][metric][dim][dim_val_for_this_hash] += vals
 
 	# For each dimension and unique value, print the mean.
-	results_fqn = 'table2_session_wer_bleu.csv'
+	results_fqn = 'table2_session_metrics.csv'
 	with open(results_fqn, 'w') as f:
 		header = 'speaker,dim,val'
 		for name in METRIC_NAMES:
@@ -119,6 +123,11 @@ def compute_metrics(paired: Dict) -> Dict:
 	"""
 	Computes WER and BLEU.
 	"""
+	# Load the Word2vec model.
+	print(f'Loading word2vec model...')
+	model = api.load('word2vec-google-news-300')
+	w2v_keys = set(model.vocab)
+
 	# Keys: Hash, speaker, metric_name
 	hash2metrics: Dict[str, Dict[str, Dict[str, List[float]]]] = {}
 	
@@ -142,9 +151,9 @@ def compute_metrics(paired: Dict) -> Dict:
 		preds[hash_][speaker].append(paired[gid]['pred'])
 
 	# For each hash, compute the metrics.
-	keys = list(gts.keys())
-	for i in tqdm(range(len(keys)), desc='Computing Metrics'):
-		hash_ = keys[i]
+	hash_keys = list(gts.keys())
+	for i in tqdm(range(len(hash_keys)), desc='Computing Metrics'):
+		hash_ = hash_keys[i]
 		for speaker in SPEAKERS:
 			# Create the single strings.
 			gt = ' '.join(gts[hash_][speaker])
@@ -159,6 +168,19 @@ def compute_metrics(paired: Dict) -> Dict:
 				hash2metrics[hash_] = {}
 				for s in SPEAKERS:
 					hash2metrics[hash_][s] = {name: [] for name in METRIC_NAMES}
+
+			# Compute embedding distances.
+			# Error handling to avoid nan, inf, and zeros.
+			emd = model.wmdistance(gt.split(' '), pred.split(' '))  # Requires List[str] of words.
+			if not math.isnan(emd) and emd > 0 and not math.isinf(emd):
+				hash2metrics[hash_][speaker]['EMD'].append(emd)
+
+			gt_embed = eeu.encode_from_dict('word2vec', model, w2v_keys, gt)
+			pred_embed = eeu.encode_from_dict('word2vec', model, w2v_keys, pred)
+			if gt_embed is not None and pred_embed is not None:
+				cosine = scipy.spatial.distance.cosine(gt_embed, pred_embed)
+				if not math.isnan(cosine) and cosine > 0 and not math.isinf(cosine):
+					hash2metrics[hash_][speaker]['COSINE'].append(cosine)
 
 			# Store the result.
 			hash2metrics[hash_][speaker]['WER'].append(wer)
@@ -184,7 +206,7 @@ def word_error_rate(pred: List[str], target: List[str]) -> float:
 	w1 = [chr(word2char[w]) for w in pred]
 	w2 = [chr(word2char[w]) for w in target]
 
-	d = Levenshtein.distance(''.join(w1), ''.join(w2))
+	d = Levenshtein._levenshtein.distance(''.join(w1), ''.join(w2))
 	wer = d / max(len(target), 1)
 	wer = min(wer, 1.0)
 	return wer
@@ -209,36 +231,6 @@ def get_mean_std(speaker: str, metric_name: str, accumulator: Dict, dim: str, va
 	mean = values.mean()
 	std = values.std()
 	return mean, std, n
-
-
-def load_dimensions() -> (Dict[str, Dict[str, int]], Dict[str, List[int]]):
-	"""
-	Loads the metadata file and returns various dimensions for each hash file.
-	:return hash2dims: Dictionary with key=hash, value=Dict of dimensions.
-	:return unique_dim_vals: For each dimension, contains the unique values.
-	"""
-	hash2dims = {}
-	unique_dim_vals = {x: set() for x in config.DIMENSIONS}
-	df = pd.read_csv(config.META_FQN, sep='\t')
-	for _, row in df.iterrows():
-		hash_ = row['hash']
-		# Skip hashes already seen.
-		if hash_ in hash2dims:
-			print(f'Duplicate: {hash_}')
-			continue
-		# Populate the dimension's values.
-		values = {}
-		for key in config.DIMENSIONS:
-			v = row[key]
-			if str(v) == 'nan':
-				continue
-			else:
-				v = int(v)
-				values[key] = v
-				unique_dim_vals[key].add(v)
-		hash2dims[hash_] = values
-
-	return hash2dims, unique_dim_vals
 
 
 def sort_csv_by_hash(args, paired: Dict) -> Dict[str, Dict[str, List[float]]]:
