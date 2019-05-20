@@ -4,6 +4,7 @@ between randomly generated sentences and sentences from our corpus.
 """
 import os
 import sys
+import math
 import argparse
 import numpy as np
 from typing import *
@@ -37,22 +38,26 @@ def main(args):
 	corpus_dists = pairwise_wmd(model, corpus_sentences)
 	print_metrics(corpus_dists, 'WMD-corpus')
 
-	n_comparisons = int((n ** 2 - n) / 2)
+	n_comparisons = int((args.n ** 2 - args.n) / 2)
 	print('--------- Unequal Variance --------')
 	statistic, pval = scipy.stats.ttest_ind(random_dists, corpus_dists, equal_var=False)
 	print(f'Statistic: {statistic}')
 	print(f'Two-Tailed P Value: {pval}')
-	print(f'n: {args.n} / {n_comparisons}')
+	print(f'n sentence: {args.n}')
+	print(f'n corpus: {len(corpus_dists)}')
+	print(f'n random: {len(random_dists)}')
 
 	print('--------- Equal Variance --------')
 	statistic, pval = scipy.stats.ttest_ind(random_dists, corpus_dists, equal_var=True)
 	print(f'Statistic: {statistic}')
 	print(f'Two-Tailed P Value: {pval}')
-	print(f'n: {args.n} / {n_comparisons}')
+	print(f'n sentence: {args.n}')
+	print(f'n corpus: {len(corpus_dists)}')
+	print(f'n random: {len(random_dists)}')
 
 	# For histogram to sum to 1, histogram requires integer=1 width bins. Our distances
 	# are often very small. Therefore, we need to scale the distances (temporarily) to compute hist.
-	n_bins = 50
+	n_bins = 30
 	random_dists = (random_dists * n_bins).astype(np.int64)
 	corpus_dists = (corpus_dists * n_bins).astype(np.int64)
 
@@ -91,11 +96,11 @@ def pairwise_wmd(model, sentences: List[str]) -> np.ndarray:
 	pbar = tqdm(total=n_dists)
 	for i in range(n):
 		for j in range(i + 1, n):
+			pbar.update(1)
 			d = model.wmdistance(sentences[i], sentences[j])
-			if d == 0:
+			if math.isnan(d) or d <= 0 or math.isinf(d):
 				continue
 			dists.append(d)
-			pbar.update(1)
 	pbar.close()
 	dists = np.asarray(dists)
 	return dists
