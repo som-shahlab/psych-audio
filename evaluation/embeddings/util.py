@@ -3,9 +3,10 @@ Contains various util functions for loading and computing embeddings.
 """
 import gensim
 import numpy as np
-from evaluation.embeddings import config
 from typing import *
 import evaluation.util
+import evaluation.embeddings.util
+from evaluation.embeddings import config
 
 
 def random_sentence(vocab: List[str]) -> str:
@@ -53,10 +54,10 @@ def random_sentences(n: int, use_corpus: bool = False) -> List[str]:
 		paired = evaluation.util.load_paired_json(skip_empty=True)
 		
 		# Select subset.
-		gids = np.asarray(paired.keys())
-		idx = np.random.choice(np.arange(len(gids)), (n,), replace=False)
-		for i in idx:
-			random_gid = gids[idx[i]]
+		gids = np.asarray(list(paired.keys()))
+		idxs = np.random.choice(np.arange(len(gids)), (n,), replace=False)
+		for idx in idxs:
+			random_gid = gids[idx]
 			sentences.append(paired[random_gid]['gt'])
 	else:
 		# Load the vocab file.

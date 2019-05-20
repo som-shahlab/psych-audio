@@ -3,9 +3,7 @@ Utility functions for evaluation.
 """
 import json
 import unidecode
-
-# Ground truth/predictions text file.
-PAIRED_FILE = '/vol0/psych_audio/ahaque/psych-audio/results/paired.json'
+import evaluation.embeddings.config as config
 
 
 def load_paired_json(skip_empty=False):
@@ -13,7 +11,7 @@ def load_paired_json(skip_empty=False):
 	Loads the paired json file. Optionally, remove sentences that have a blank GT or pred.
 	:return paired: Dictionary of gt/pred/gid/etc values.
 	"""
-	with open('results/paired.json') as f:
+	with open(config.PAIRED_FQN) as f:
 		data = json.load(f)
 
 	# Remove empty sentences if desired.
