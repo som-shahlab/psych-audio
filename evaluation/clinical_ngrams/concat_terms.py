@@ -7,11 +7,11 @@ import pandas as pd
 
 
 def main():
-	df = pd.read_csv('word2phq.tsv', sep='\t')
+	df = pd.read_csv('clinical-terms-v3.tsv', sep='\t')
 	terms = {x: [] for x in range(1, 10)}
 	for i, row in df.iterrows():
-		phq = int(row['phq'])
-		ngram = row['word']
+		phq = int(row['PHQ'])
+		ngram = row['TERM']
 		terms[phq].append(ngram)
 	
 	for i in range(1, 10):

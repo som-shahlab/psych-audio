@@ -14,7 +14,7 @@ import argparse
 import numpy as np
 import scipy.stats
 import scipy.spatial.distance
-from evaluation.embeddings import config
+from evaluation import config
 from tqdm import tqdm
 
 

@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 import evaluation.util
-from evaluation.embeddings import config
+from evaluation import config
 from bert_serving.client import BertClient
 
 

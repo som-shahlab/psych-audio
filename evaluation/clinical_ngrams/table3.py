@@ -8,12 +8,31 @@ import argparse
 from tqdm import tqdm
 from typing import List, Dict
 import evaluation.util
+from evaluation import config
 
 # The name of the clinically-relevant words file. Each line should contain a phrase or word that's clinically useful.
-RELEVANT_WORDS_FQN = 'evaluation/clinical_ngrams/ngrams.txt'
+RELEVANT_WORDS_FQN = 'evaluation/clinical_ngrams/clinical-terms-v3.tsv'
+
 
 
 def main(args):
+	if not os.path.exists(config.META_FQN):
+		print(f'File does not exist: {config.META_FQN}')
+		sys.exit(1)
+
+	# Load the paired file. We want ALL the data.
+	paired = evaluation.util.load_paired_json(skip_empty=False)
+
+	# Combine into speaker segments.
+	print(paired)
+
+	# For each segment, compute TP, TN, etc. for each term.
+
+	# Save to file: term, TP, TN, etc.
+	pass
+	
+
+def main2(args):
 	# Load the GID->speaker map.
 	gid2speaker = evaluation.util.load_gid2speaker()
 
@@ -115,6 +134,4 @@ def load_ngrams() -> Dict[int, List[str]]:
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
-	parser.add_argument('text_file', type=str, help='Location of the combined GT/pred text file.')
-	parser.add_argument('speaker', type=str, choices=['T', 'P'], help='Compute for therapist or patient.')
 	main(parser.parse_args())
