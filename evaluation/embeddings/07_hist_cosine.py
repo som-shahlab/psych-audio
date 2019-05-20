@@ -42,7 +42,7 @@ def main(args):
 	eeu.print_metrics(corpus_dists, 'Cosine-corpus')
 
 	out_fqn = os.path.join(args.output_dir, 'cosine.png')
-	eeu.plot_histogram(out_fqn, random_dists, corpus_dists)
+	eeu.plot_histogram(out_fqn, random_dists, corpus_dists, n_bins=50)
 
 	print('--------- Unequal Variance --------')
 	statistic, pval = scipy.stats.ttest_ind(random_dists, corpus_dists, equal_var=False)

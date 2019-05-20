@@ -189,7 +189,7 @@ def print_metrics(arr: np.ndarray, text: str):
 	print(f'n: {len(arr)}')
 
 
-def plot_histogram(fqn: str, random_dists: np.ndarray, corpus_dists: np.ndarray):
+def plot_histogram(fqn: str, random_dists: np.ndarray, corpus_dists: np.ndarray, n_bins: int = 30):
 	"""
 	Plots a histogram of the random and corpus distances.
 	
@@ -200,7 +200,6 @@ def plot_histogram(fqn: str, random_dists: np.ndarray, corpus_dists: np.ndarray)
 	"""
 	# For histogram to sum to 1, histogram requires integer=1 width bins. Our distances
 	# are often very small. Therefore, we need to scale the distances (temporarily) to compute hist.
-	n_bins = 30
 	random_dists = (random_dists * n_bins).astype(np.int64)
 	corpus_dists = (corpus_dists * n_bins).astype(np.int64)
 
