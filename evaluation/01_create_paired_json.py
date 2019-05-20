@@ -14,6 +14,7 @@ import numpy as np
 from tqdm import tqdm
 from typing import List, Dict
 import preproc.util
+import evaluation.embeddings.config as config
 
 
 def main(args):
@@ -66,7 +67,7 @@ def main(args):
 			gid += 1
 
 	# Write output json file.
-	with open('results/paired.json', 'w') as f:
+	with open(config.PAIRED_FQN, 'w') as f:
 		json.dump(paired, f, indent=2)
 
 
