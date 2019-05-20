@@ -37,23 +37,24 @@ def main(args):
 	corpus_dists = pairwise_wmd(model, corpus_sentences)
 	print_metrics(corpus_dists, 'WMD-corpus')
 
+	n_comparisons = int((n ** 2 - n) / 2)
 	print('--------- Unequal Variance --------')
 	statistic, pval = scipy.stats.ttest_ind(random_dists, corpus_dists, equal_var=False)
 	print(f'Statistic: {statistic}')
 	print(f'Two-Tailed P Value: {pval}')
-	print(f'n: {args.n}')
+	print(f'n: {args.n} / {n_comparisons}')
 
 	print('--------- Equal Variance --------')
 	statistic, pval = scipy.stats.ttest_ind(random_dists, corpus_dists, equal_var=True)
 	print(f'Statistic: {statistic}')
 	print(f'Two-Tailed P Value: {pval}')
-	print(f'n: {args.n}')
+	print(f'n: {args.n} / {n_comparisons}')
 
 	# For histogram to sum to 1, histogram requires integer=1 width bins. Our distances
 	# are often very small. Therefore, we need to scale the distances (temporarily) to compute hist.
-	n_bins = 100
-	random_dists *= n_bins
-	corpus_dists *= n_bins
+	n_bins = 50
+	random_dists = (random_dists * n_bins).astype(np.int64)
+	corpus_dists = (corpus_dists * n_bins).astype(np.int64)
 
 	# Need to manually specify bins otherwise the histogram will not sum to 1.
 	min_val = min(random_dists.min(), corpus_dists.min())
@@ -91,6 +92,8 @@ def pairwise_wmd(model, sentences: List[str]) -> np.ndarray:
 	for i in range(n):
 		for j in range(i + 1, n):
 			d = model.wmdistance(sentences[i], sentences[j])
+			if d == 0:
+				continue
 			dists.append(d)
 			pbar.update(1)
 	pbar.close()
@@ -107,6 +110,7 @@ def print_metrics(arr: np.ndarray, text: str):
 
 
 if __name__ == '__main__':
+	plt.style.use('ggplot')
 	parser = argparse.ArgumentParser()
 	parser.add_argument('output_dir', help='Where to save the output figure.')
 	parser.add_argument('--n', type=int, help='Number of sentences to use for pairwise comparison.')
