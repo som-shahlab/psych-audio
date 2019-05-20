@@ -51,7 +51,7 @@ def main(args):
 
 	# For histogram to sum to 1, histogram requires integer=1 width bins. Our distances
 	# are often very small. Therefore, we need to scale the distances (temporarily) to compute hist.
-	n_bins = 50
+	n_bins = 100
 	random_dists *= n_bins
 	corpus_dists *= n_bins
 
@@ -109,7 +109,5 @@ def print_metrics(arr: np.ndarray, text: str):
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument('output_dir', help='Where to save the output figure.')
-	parser.add_argument('--embedding_name', default='word2vec', type=str, choices=['bert', 'word2vec', 'use'])
-	parser.add_argument('--distance', default='cosine', type=str, choices=['cosine', 'wasserstein', 'euclidean'])
 	parser.add_argument('--n', type=int, help='Number of sentences to use for pairwise comparison.')
 	main(parser.parse_args())
