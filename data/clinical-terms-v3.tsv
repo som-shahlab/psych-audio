@@ -31,15 +31,15 @@ PHQ	CUI	TERM
 2	C0344315	morose mood
 2	C0344315	morosity
 2	C0549249	consciousness decreased
-2	C0549249	consciousness, level depressed
+2	C0549249	consciousness level depressed
 2	C0549249	decreased consciousness
 2	C0549249	depressed
 2	C0549249	depressed level of consciousness
 3	C0013144	drowsiness
-3	C0013144	drowsiness, function
+3	C0013144	drowsiness function
 3	C0013144	drowsinesses
 3	C0013144	drowsy
-3	C0013144	mental status, drowsy
+3	C0013144	mental status drowsy
 3	C0013144	sleepiness
 3	C0013144	sleepy
 3	C0013144	somnolence
@@ -50,7 +50,7 @@ PHQ	CUI	TERM
 4	C0424589	vitality
 4	C0557875	tired
 5	C0020505	excessive eating
-5	C0020505	excessive eating - polyphagia
+5	C0020505	excessive eating polyphagia
 5	C0020505	gluttony
 5	C0020505	hyperalimentation
 5	C0020505	hyperphagia
@@ -65,23 +65,23 @@ PHQ	CUI	TERM
 6	C0205169	poorly
 7	C0086045	attention concentration
 7	C0086045	concentration
-7	C0086045	concentration, function
+7	C0086045	concentration function
 7	C0086045	concentrations
 7	C0086045	mental concentration
 7	C0086045	mindfulness
 8	C0085631	agitate
 8	C0085631	agitated
-8	C0085631	agitated - symptom
+8	C0085631	agitated symptom
 8	C0085631	agitated behavior
 8	C0085631	agitated behaviour
 8	C0085631	agitates
 8	C0085631	agitation
-8	C0085631	agitation, psychomotor
+8	C0085631	agitation psychomotor
 8	C0085631	excessive overactivity
-8	C0085631	excitement, psychomotor
+8	C0085631	excitement psychomotor
 8	C0085631	feeling agitated
 8	C0085631	feeling of restlessness
-8	C0085631	hyperactivity, psychomotor
+8	C0085631	hyperactivity psychomotor
 8	C0085631	increased purposeless goalless activity
 8	C0085631	psychomotor agitation
 8	C0085631	psychomotor excitement
@@ -91,7 +91,7 @@ PHQ	CUI	TERM
 8	C0085631	restlessness
 8	C0085631	restlessness behavior
 8	C0085631	restlessness behaviour
-8	C0085631	restlessness, psychomotor
+8	C0085631	restlessness psychomotor
 8	C0085631	unable to keep still
 8	C0424230	motor retardation
 8	C0424230	moving slow
@@ -120,12 +120,12 @@ PHQ	CUI	TERM
 9	C1306577	died
 9	C1306577	dies patient
 9	C1306577	has died
-9	C1306577	o/e - dead
-9	C1306577	o/e - dead - condition fatal
-9	C1306577	on examination - dead
+9	C1306577	oe dead
+9	C1306577	oe dead condition fatal
+9	C1306577	on examination dead
 9	C1306577	patient dead
 9	C1306577	patient died
 9	C1546956	dead
 9	C1546956	died
 9	C1546956	has died
-9	C1546956	patient outcome - died
+9	C1546956	patient outcome died
