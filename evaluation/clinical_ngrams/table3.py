@@ -51,19 +51,27 @@ def main(args):
 		if len(gt) == 0 and len(pred) == 0:
 			continue
 
-		# For each term, check if this sentence contains it.
+		# For each term, count how many times it appears in this sentence.
 		for term in term2phq:
-			in_gt = True if term in gt else False
-			in_pred = True if term in pred else False
+			n_words = len(term.replace('-', '').split(' '))
+			n_ngrams = max(len(gt.split(' ')) + 1 - n_words, 0)
 
-			if in_gt and in_pred:
-				counts[term]['TP'] += 1
-			elif in_gt and not in_pred:
-				counts[term]['FN'] += 1
-			elif not in_gt and in_pred:
-				counts[term]['FP'] += 1
-			elif not in_gt and not in_pred:
-				counts[term]['TN'] += 1
+			n_gt = sum(1 for _ in re.finditer(r'\b%s\b' % re.escape(term), gt))
+			n_pred = sum(1 for _ in re.finditer(r'\b%s\b' % re.escape(term), pred))
+
+			# Count TP/TN/FP/FN.
+			tp = min(n_gt, n_pred)
+			fp, fn = 0, 0
+			if n_gt > n_pred:
+				fn = n_gt - tp
+			elif n_gt < n_pred:
+				fp = n_pred - tp
+			tn = n_ngrams - tp - fn - fp
+
+			counts[term]['TP'] += tp
+			counts[term]['FN'] += fn
+			counts[term]['FP'] += fp
+			counts[term]['TN'] += tn
 
 	# Write to file.
 	out_fqn = 'table3.tsv'
