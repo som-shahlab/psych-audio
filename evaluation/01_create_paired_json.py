@@ -14,7 +14,7 @@ import numpy as np
 from tqdm import tqdm
 from typing import List, Dict
 import preproc.util
-import evaluation.embeddings.config as config
+import evaluation.config as config
 
 
 def main(args):
@@ -31,7 +31,7 @@ def main(args):
 	# Loop over all sessions.
 	ls = sorted(os.listdir(args.machine_dir))
 	gid = 0  # Global sentence ID.
-	for i in tqdm(range(len(ls))):
+	for i in tqdm(range(len(ls)), desc='Processing Files'):
 		filename = ls[i]
 		hash = filename.replace('.json', '')
 		# Load and standardize the ground truth.
@@ -114,7 +114,11 @@ def create_segments(seg_ts: List[float], data: Dict) -> List[str]:
 			buffer = []
 			for j in idx:
 				buffer.append(data['words'][j])
-			sentence = ' '.join(buffer)
+			if is_doubled(buffer):
+				clean = buffer[:int(len(buffer)/2)]
+			else:
+				clean = buffer
+			sentence = ' '.join(clean)
 			sentence = re.sub('\s+', ' ', sentence).strip()
 			segments.append(sentence)
 		# If we have no words, append an empty segment.
