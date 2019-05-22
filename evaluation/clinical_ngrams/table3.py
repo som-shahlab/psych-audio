@@ -5,14 +5,17 @@ import os
 import re
 import sys
 import argparse
+import numpy as np
+import pandas as pd
 from tqdm import tqdm
 from typing import List, Dict
+from collections import Counter
+
 import evaluation.util
 from evaluation import config
 
-# The name of the clinically-relevant words file. Each line should contain a phrase or word that's clinically useful.
-RELEVANT_WORDS_FQN = 'evaluation/clinical_ngrams/clinical-terms-v3.tsv'
-
+SPEAKERS = ['T', 'P']
+OUTCOMES = ['TP', 'FP', 'FN', 'TN']
 
 
 def main(args):
@@ -23,13 +26,72 @@ def main(args):
 	# Load the paired file. We want ALL the data.
 	paired = evaluation.util.load_paired_json(skip_empty=False)
 
-	# Combine into speaker segments.
-	print(paired)
+	# Load the term file.
+	term2phq = load_terms()
+
+	# Results counter.
+	counts = {term: {key: 0 for key in OUTCOMES} for term in term2phq}
 
 	# For each segment, compute TP, TN, etc. for each term.
+	i = 0
+	gid_keys = list(paired.keys())
+	for gid in tqdm(gid_keys, desc='Computing Metrics'):
+		# Get the data.
+		i+=1
+		hash_ = paired[gid]['hash']
+		gt = paired[gid]['gt']
+		pred = paired[gid]['pred']
+		speaker = paired[gid]['speaker']
 
-	# Save to file: term, TP, TN, etc.
-	pass
+		# Only comptue results for the patient.
+		if speaker != 'P':
+			continue
+
+		# Skip blank sentences.
+		if len(gt) == 0 and len(pred) == 0:
+			continue
+
+		# For each term, check if this sentence contains it.
+		for term in term2phq:
+			in_gt = True if term in gt else False
+			in_pred = True if term in pred else False
+
+			if in_gt and in_pred:
+				counts[term]['TP'] += 1
+			elif in_gt and not in_pred:
+				counts[term]['FN'] += 1
+			elif not in_gt and in_pred:
+				counts[term]['FP'] += 1
+			elif not in_gt and not in_pred:
+				counts[term]['TN'] += 1
+
+	# Write to file.
+	out_fqn = 'table3.tsv'
+	with open(out_fqn, 'w') as f:
+		f.write(f'phq\tterm\ttp\tfn\tfp\ttn\n')
+		for term in counts:
+			phq = term2phq[term]
+			tp = counts[term]['TP']
+			fn = counts[term]['FN']
+			fp = counts[term]['FP']
+			tn = counts[term]['TN']
+			f.write(f'{phq}\t{term}\t{tp}\t{fn}\t{fp}\t{tn}\n')
+	print(out_fqn)
+
+def load_terms() -> Dict[str, int]:
+	"""
+	Loads the PHQ term file.
+
+	Returns:
+		term2phq: Dictionary with key=term and value=PHQ number.
+	"""
+	df = pd.read_csv(config.PHQ_TERM_FQN, sep='\t')
+	term2phq: Dict[str, int] = {}
+	for _, row in df.iterrows():
+		term = row['TERM']
+		phq = row['PHQ']
+		term2phq[term] = phq
+	return term2phq
 	
 
 def main2(args):
