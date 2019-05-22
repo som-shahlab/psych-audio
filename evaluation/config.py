@@ -12,17 +12,14 @@ F: Dict[str, int] = {'word2vec': 300, 'glove': 300, 'bert': 1024}
 # Max BERT sequence length (words), as specified in `server/start.sh`.
 SEQ_LEN = 100
 
-# Location of the saved embeddings (npz files).
-NPZ_DIR = '/vol0/psych_audio/ahaque/psych-audio/results/embeddings'
-
-# Where to save the output csv distance files.
-DISTANCES_DIR = '/vol0/psych_audio/ahaque/psych-audio/results/dists'
-
 # Path to the metadata file.
 META_FQN = '/vol0/psych_audio/scotty/results/scotty_phq9_diffs_with_paths.tsv'
 
 # Path to the paired.json corpus and predictions file.
 PAIRED_FQN = '/vol0/psych_audio/ahaque/psych-audio/results/paired.json'
+
+# Path to the PHQ term file.
+PHQ_TERM_FQN = '/vol0/psych_audio/ahaque/psych-audio/data/clinical-terms-v3.tsv'
 
 # Path to the vocabulary file of all possible words.
 VOCAB_FQN = '/vol0/psych_audio/ahaque/psych-audio/data/english.txt'

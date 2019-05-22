@@ -1,0 +1,131 @@
+PHQ	CUI	TERM
+1	C0543488	interest
+1	C0543488	interested
+1	C0543488	interesting
+1	C0543488	interests
+1	C0679105	enjoyment
+1	C0679105	pleasurable emotion
+1	C0679105	pleasure
+1	C0679105	pleasures
+2	C0150041	cannot see a future
+2	C0150041	feeling hopeless
+2	C0150041	feeling of hopelessness
+2	C0150041	feels there is no future
+2	C0150041	future hope
+2	C0150041	hopeless
+2	C0150041	hopelessness
+2	C0150041	loss of hope for the future
+2	C0150041	negative about the future
+2	C0150041	no hope for the future
+2	C0344315	depressed
+2	C0344315	depressed mood
+2	C0344315	depressing
+2	C0344315	depression
+2	C0344315	depression moods
+2	C0344315	feeling down
+2	C0344315	feeling low
+2	C0344315	low mood
+2	C0344315	melancholic
+2	C0344315	melancholy
+2	C0344315	miserable
+2	C0344315	morose mood
+2	C0344315	morosity
+2	C0549249	consciousness decreased
+2	C0549249	consciousness level depressed
+2	C0549249	decreased consciousness
+2	C0549249	depressed
+2	C0549249	depressed level of consciousness
+3	C0013144	drowsiness
+3	C0013144	drowsiness function
+3	C0013144	drowsinesses
+3	C0013144	drowsy
+3	C0013144	mental status drowsy
+3	C0013144	sleepiness
+3	C0013144	sleepy
+3	C0013144	somnolence
+3	C0013144	somnolent
+3	C0424522	asleep
+3	C0424522	sleeping
+4	C0424589	energy
+4	C0424589	vitality
+4	C0557875	tired
+5	C0020505	excessive eating
+5	C0020505	excessive eating polyphagia
+5	C0020505	gluttony
+5	C0020505	hyperalimentation
+5	C0020505	hyperphagia
+5	C0020505	over eating
+5	C0020505	overeat
+5	C0020505	overeating
+5	C0020505	overeats
+5	C0020505	polyphagia
+5	C0020505	polyphagias
+6	C0205169	bad
+6	C0205169	badly
+6	C0205169	poorly
+7	C0086045	attention concentration
+7	C0086045	concentration
+7	C0086045	concentration function
+7	C0086045	concentrations
+7	C0086045	mental concentration
+7	C0086045	mindfulness
+8	C0085631	agitate
+8	C0085631	agitated
+8	C0085631	agitated symptom
+8	C0085631	agitated behavior
+8	C0085631	agitated behaviour
+8	C0085631	agitates
+8	C0085631	agitation
+8	C0085631	agitation psychomotor
+8	C0085631	excessive overactivity
+8	C0085631	excitement psychomotor
+8	C0085631	feeling agitated
+8	C0085631	feeling of restlessness
+8	C0085631	hyperactivity psychomotor
+8	C0085631	increased purposeless goalless activity
+8	C0085631	psychomotor agitation
+8	C0085631	psychomotor excitement
+8	C0085631	psychomotor hyperactivity
+8	C0085631	psychomotor restlessness
+8	C0085631	restless
+8	C0085631	restlessness
+8	C0085631	restlessness behavior
+8	C0085631	restlessness behaviour
+8	C0085631	restlessness psychomotor
+8	C0085631	unable to keep still
+8	C0424230	motor retardation
+8	C0424230	moving slow
+8	C0424230	psychomotor retardation
+8	C0424235	fidget
+8	C0424235	fidgeting
+8	C0424235	fidgets
+8	C0424235	fidgety
+8	C0439834	slow
+8	C0439834	slowing
+8	C0439834	slowly
+8	C0920289	moving slow
+8	C0920289	slow to move
+8	C0920289	sluggishness
+9	C0038661	suicide
+9	C0038661	suicides
+9	C0812393	cancer patients and depression and suicide
+9	C0812393	cancer patients and suicide and depression
+9	C0812393	depression
+9	C0812393	depression and suicide
+9	C0812393	suicide
+9	C0812393	suicide and depression
+9	C1306577	dead
+9	C1306577	death
+9	C1306577	death adverse event not associated with more specific ctcae term
+9	C1306577	died
+9	C1306577	dies patient
+9	C1306577	has died
+9	C1306577	oe dead
+9	C1306577	oe dead condition fatal
+9	C1306577	on examination dead
+9	C1306577	patient dead
+9	C1306577	patient died
+9	C1546956	dead
+9	C1546956	died
+9	C1546956	has died
+9	C1546956	patient outcome died

@@ -15,7 +15,7 @@ from sklearn.manifold import TSNE
 from bert_serving.client import BertClient
 
 import evaluation.util
-from evaluation.embeddings import config
+from evaluation import config
 import evaluation.embeddings.util
 
 # Location to save and load the random embedding npy files.

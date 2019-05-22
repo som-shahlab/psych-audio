@@ -10,7 +10,7 @@ import argparse
 import numpy as np
 import pandas as pd
 import evaluation.util
-from evaluation.embeddings import config
+from evaluation import config
 from typing import Dict, List, Set, Any
 
 

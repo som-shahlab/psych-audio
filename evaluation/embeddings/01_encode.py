@@ -15,7 +15,7 @@ from typing import *
 from tqdm import tqdm
 import evaluation.util
 import evaluation.embeddings.util
-from evaluation.embeddings import config
+from evaluation import config
 
 
 def main(args):

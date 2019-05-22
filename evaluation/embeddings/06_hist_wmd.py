@@ -18,7 +18,7 @@ import gensim.downloader as api
 
 
 import evaluation.embeddings.util as eeu
-from evaluation.embeddings import config
+from evaluation import config
 
 def main(args):
 	# Generate random sentences.
