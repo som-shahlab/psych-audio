@@ -1,8 +1,5 @@
 """
-This file creates a Table 2 (quant results) using the paired.json file.
-
-Prerequisites:
-- Result csv files.
+Creates a Table 2 using session-level data.
 """
 import os
 import sys
@@ -18,8 +15,8 @@ import scipy.spatial.distance
 import gensim.downloader as api
 
 import evaluation.util
+from evaluation import config
 import evaluation.embeddings.util as eeu
-from evaluation.embeddings import config
 
 METRIC_NAMES = ['WER', 'BLEU', 'COSINE', 'EMD']
 SPEAKERS = ['T', 'P']
@@ -35,9 +32,9 @@ def main(args):
 		sys.exit(1)
 
 	# Load the paired file. We want ALL the data.
-	paired = evaluation.util.load_paired_json(skip_empty=False)
+	paired = evaluation.util.load_paired_json(skip_empty=True)
 
-	# Compute WER, BLEU, EMD, etc.
+	# Compute WER and BLEU here.
 	hash2metrics = compute_metrics(paired)
 
 	# For each hash, determine the values for each dimension of interest.
@@ -71,7 +68,7 @@ def main(args):
 					accumulator[speaker][metric][dim][dim_val_for_this_hash] += vals
 
 	# For each dimension and unique value, print the mean.
-	results_fqn = 'table2_segment.csv'
+	results_fqn = 'table2_session_metrics.csv'
 	with open(results_fqn, 'w') as f:
 		header = 'speaker,dim,val'
 		for name in METRIC_NAMES:
@@ -113,8 +110,11 @@ def load_dimensions() -> (Dict[str, Dict[str, int]], Dict[str, List[int]]):
 			v = row[key]
 			if str(v) == 'nan':
 				continue
-			else:
+			elif isinstance(v, float) or isinstance(v, int):
 				v = int(v)
+				values[key] = v
+				unique_dim_vals[key].add(v)
+			elif key == 'gender_imputed':
 				values[key] = v
 				unique_dim_vals[key].add(v)
 		hash2dims[hash_] = values
@@ -125,59 +125,69 @@ def load_dimensions() -> (Dict[str, Dict[str, int]], Dict[str, List[int]]):
 def compute_metrics(paired: Dict) -> Dict:
 	"""
 	Computes WER and BLEU.
-
-	Args:
-		paired: Dictionary structure of the paired GT/pred data.
-		model: Word2vec dictionary model of word:embedding.
-
-	Returns:
-		hash2metrics: Hash to m`etrics result dictionary.
 	"""
-	# Load the Word2vec model.
-	print(f'Loading word2vec model...')
-	model = api.load('word2vec-google-news-300')
-	w2v_keys = set(model.vocab)
+	# # Load the Word2vec model.
+	# print(f'Loading word2vec model...')
+	# model = api.load('word2vec-google-news-300')
+	# w2v_keys = set(model.vocab)
 
 	# Keys: Hash, speaker, metric_name
-	hash2metrics: Dict[str, Dict[str, Dict[str, float]]] = {}
-
-	# For each GID (phrase), compute the metrics.
-	gid_keys = list(paired.keys())
-	for i in tqdm(range(len(gid_keys)), desc='Computing Metrics'):
-		# Get the data.
-		gid = gid_keys[i]
+	hash2metrics: Dict[str, Dict[str, Dict[str, List[float]]]] = {}
+	
+	# Concat all sentences for the speaker/patient into a single string.
+	# Keys: Hash, speaker. Value: List of phrases.
+	gts = {}
+	preds = {}
+	keys = list(paired.keys())
+	for i in tqdm(range(len(keys)), desc='Concatenating'):
+		gid = keys[i]
 		hash_ = paired[gid]['hash']
-		gt = paired[gid]['gt']
-		pred = paired[gid]['pred']
 		speaker = paired[gid]['speaker']
 		if speaker not in SPEAKERS:
 			continue
-		# Compute WER and BLEU.
-		bleu = nltk.translate.bleu_score.sentence_bleu(references=[gt], hypothesis=pred)
-		wer = word_error_rate(pred, gt)
 
-		# If new hash, populate the dict with accumulator lists.
-		if hash_ not in hash2metrics:
-			hash2metrics[hash_] = {}
-			for s in SPEAKERS:
-				hash2metrics[hash_][s] = {name: [] for name in METRIC_NAMES}
+		if hash_ not in gts:
+			gts[hash_] = {s: [] for s in SPEAKERS}
+			preds[hash_] = {s: [] for s in SPEAKERS}
 
-		# Compute embedding distances.
-		# Error handling to avoid nan, inf, and zeros.
-		emd = model.wmdistance(gt.split(' '), pred.split(' '))  # Requires List[str] of words.
-		if not math.isnan(emd) and emd > 0 and not math.isinf(emd):
-			hash2metrics[hash_][speaker]['EMD'].append(emd)
+		gts[hash_][speaker].append(paired[gid]['gt'])
+		preds[hash_][speaker].append(paired[gid]['pred'])
 
-		gt_embed = eeu.encode_from_dict('word2vec', model, w2v_keys, gt)
-		pred_embed = eeu.encode_from_dict('word2vec', model, w2v_keys, pred)
-		if gt_embed is not None and pred_embed is not None:
-			cosine = scipy.spatial.distance.cosine(gt_embed, pred_embed)
-			if not math.isnan(cosine) and cosine > 0 and not math.isinf(cosine):
-				hash2metrics[hash_][speaker]['COSINE'].append(cosine)
+	# For each hash, compute the metrics.
+	hash_keys = list(gts.keys())
+	for i in tqdm(range(len(hash_keys)), desc='Computing Metrics'):
+		hash_ = hash_keys[i]
+		for speaker in SPEAKERS:
+			# Create the single strings.
+			gt = ' '.join(gts[hash_][speaker])
+			pred = ' '.join(preds[hash_][speaker])
 
-		# Store the result.
-		hash2metrics[hash_][speaker]['WER'].append(wer)
-		hash2metrics[hash_][speaker]['BLEU'].append(bleu)
+			# Compute WER and BLEU.
+			bleu = nltk.translate.bleu_score.sentence_bleu(references=[gt], hypothesis=pred)
+			wer = word_error_rate(pred, gt)
+			
+			# If new hash, populate the dict with accumulator lists.
+			if hash_ not in hash2metrics:
+				hash2metrics[hash_] = {}
+				for s in SPEAKERS:
+					hash2metrics[hash_][s] = {name: [] for name in METRIC_NAMES}
+
+			# Compute embedding distances.
+			# Error handling to avoid nan, inf, and zeros.
+			# emd = model.wmdistance(gt.split(' '), pred.split(' '))  # Requires List[str] of words.
+			# if not math.isnan(emd) and emd > 0 and not math.isinf(emd):
+			# 	hash2metrics[hash_][speaker]['EMD'].append(emd)
+
+			# gt_embed = eeu.encode_from_dict('word2vec', model, w2v_keys, gt)
+			# pred_embed = eeu.encode_from_dict('word2vec', model, w2v_keys, pred)
+			# if gt_embed is not None and pred_embed is not None:
+			# 	cosine = scipy.spatial.distance.cosine(gt_embed, pred_embed)
+			# 	if not math.isnan(cosine) and cosine > 0 and not math.isinf(cosine):
+			# 		hash2metrics[hash_][speaker]['COSINE'].append(cosine)
+
+			# Store the result.
+			hash2metrics[hash_][speaker]['WER'].append(wer)
+			hash2metrics[hash_][speaker]['BLEU'].append(bleu)
 
 	return hash2metrics
 
@@ -224,38 +234,6 @@ def get_mean_std(speaker: str, metric_name: str, accumulator: Dict, dim: str, va
 	mean = values.mean()
 	std = values.std()
 	return mean, std, n
-
-
-def sort_csv_by_hash(args, paired: Dict) -> Dict[str, Dict[str, List[float]]]:
-	"""
-	For each hash, collects all distances for that hash. Note that a single hash
-	may consist of multiple GIDs.
-
-	:param args: Argparse namespace.
-	:param paired: Paired data from the json file.
-	:return hash2metrics: Dictionary with key: hash, and value: dictionary of embedding distances.
-	"""
-	hash2metrics = {}
-	# For each distance file, populate the accumulators based on the gid's hash value.
-	for embedding_name in config.F.keys():
-		out_dir = os.path.join(config.DISTANCES_DIR, args.distance)
-		csv_fqn = os.path.join(out_dir, f'{embedding_name}.csv')
-		df = pd.read_csv(csv_fqn, sep=',')
-
-		# Loop over each row in the CSV distance file and add to the accumulator.
-		for _, row in df.iterrows():
-			# Get the data.
-			gid, value = str(int(row['gid'])), row['value']
-			hash = paired[gid]['hash']
-
-			# If new hash, populate the dict with accumulator lists.
-			if hash not in hash2metrics:
-				hash2metrics[hash] = {k: [] for k in config.F.keys()}
-
-			# Add to accumulator.
-			hash2metrics[hash][embedding_name].append(value)
-
-	return hash2metrics
 
 
 if __name__ == '__main__':

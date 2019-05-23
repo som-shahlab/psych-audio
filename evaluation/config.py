@@ -27,7 +27,7 @@ VOCAB_FQN = '/vol0/psych_audio/ahaque/psych-audio/data/english.txt'
 # Which dimensions to analyze. That is, each item in the below list
 # will be a subsection of the table. i.e., Gender will be broken down into male/female (its unique values).
 DIMENSIONS = [
-	'Gender_ses1',
+	'gender_imputed',
 	'Num_sess',
 	'Age_ses1',
 	'PHQ9_total_ses',

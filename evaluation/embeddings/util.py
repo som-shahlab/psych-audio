@@ -9,7 +9,7 @@ import scipy.spatial.distance
 import matplotlib.pyplot as plt
 import evaluation.util
 import evaluation.embeddings.util
-from evaluation.embeddings import config
+from evaluation import config
 
 
 def random_sentence(vocab: List[str]) -> str:

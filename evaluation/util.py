@@ -3,7 +3,7 @@ Utility functions for evaluation.
 """
 import json
 import unidecode
-import evaluation.embeddings.config as config
+import evaluation.config as config
 
 
 def load_paired_json(skip_empty=False):
@@ -20,7 +20,7 @@ def load_paired_json(skip_empty=False):
 	else:
 		paired = {}
 		for gid in data.keys():
-			if len(data[gid]['gt']) == 0 or len(data[gid]['pred']) == 0:
+			if len(data[gid]['gt']) == 0 and len(data[gid]['pred']) == 0:
 				continue
 			else:
 				paired[gid] = data[gid]
