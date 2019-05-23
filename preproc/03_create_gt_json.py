@@ -12,72 +12,33 @@ from tqdm import tqdm
 from pandas import DataFrame
 import preproc.util
 import preproc.config
+import evaluation.config
 
 
 def main(args):
-	# Ensure the metadata file is valid.
-	if not args.no_meta_check:
-		if not preproc.util.metadata_file_is_clean(preproc.config.meta_fqn):
-			print(f'File contains errors: {preproc.config.meta_fqn}')
-			return
-		else:
-			print('Metadata file OK.')
-
+	# Load the metadata file.
 	meta = pd.read_csv(preproc.config.meta_fqn, sep='\t')
 
-	# Create the audio filename to has mapping.
-	audio2hash = create_audio2hash_map(meta)
-	trans_filenames = sorted(os.listdir(preproc.config.gt_dir))
-	for filename in tqdm(trans_filenames):
-		if filename == '.DS_Store': continue
-		audio_filenames, results = gt2dict(os.path.join(preproc.config.gt_dir, filename))
-
-		# Some transcription filenames have two or more audio files associated with them.
-		# We need to check which hash actually works.
-		if len(audio_filenames) == 1:
-			x = audio_filenames[0]
-			if x not in audio2hash:
-				print(f'Audio file not in hash: {x} {filename}')
-				continue
-			hash = audio2hash[x]
-		else:
-			hash = None
-			for x in audio_filenames:
-				if x in audio2hash:
-					hash = audio2hash[x]
-					break
-		if hash is None:
-			print(f'Transcription file lists invalid audio: {filename}')
-			return
-
-		out_fqn = os.path.join(args.output_dir, f'{hash}.json')
-		with open(out_fqn, 'w') as f:
-			json.dump(results, f, indent=2, separators=(',', ': '))
-
-
-def create_audio2hash_map(meta: DataFrame) -> Dict[str, str]:
-	"""
-	Creates a dictionary with key=audio filename and value=hash.
-
-	:param meta: Pandas DataFrame of the metadata file.
-	:return: Dictionary which maps filenames to hash.
-	"""
-	mapping = {}
+	# For each test-set row, check if the gold and audio file exists.
+	count = 0
 	for i, row in meta.iterrows():
-		if i == 0: continue  # Skip the header.
-		audio_path_str = str(row['audio_path'])
-		if audio_path_str == 'nan':
-			continue
+		asr_test = row['asr_test']
+		gold_path = row['gold_path']
+		hash_ = row['hash']
+		if asr_test:
+			count += 1
+			_, results = gt2dict(gold_path)
+			# Confirm if audio file exists.
+			flac_fqn = os.path.join('/vol0/psych_audio/jasa_format/flac', f'{hash_}.flac')
+			if not os.path.exists(flac_fqn):
+				print(f'Audio does not exist: flac_fqn')
+				continue
 
-		paths = audio_path_str.split(';')  # Split, in case has multiple audio files.
-		hash = row['hash']
-
-		for path in paths:
-			filename = preproc.util.remove_extension(os.path.basename(path))
-			mapping[filename] = hash
-
-	return mapping
-
+			# Write the GT json file.
+			out_fqn = os.path.join(args.output_dir, f'{hash_}.json')
+			with open(out_fqn, 'w') as f:
+				json.dump(results, f, indent=2, separators=(',', ': '))
+				
 
 def gt2dict(trans_fqn: str) -> (List[str], Dict):
 	"""

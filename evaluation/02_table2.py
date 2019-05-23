@@ -15,7 +15,7 @@ import scipy.spatial.distance
 import gensim.downloader as api
 
 import evaluation.util
-from evaluation.embeddings import config
+from evaluation import config
 import evaluation.embeddings.util as eeu
 
 METRIC_NAMES = ['WER', 'BLEU', 'COSINE', 'EMD']
@@ -32,61 +32,40 @@ def main(args):
 		sys.exit(1)
 
 	# Load the paired file. We want ALL the data.
-	paired = evaluation.util.load_paired_json(skip_empty=False)
+	paired = evaluation.util.load_paired_json(skip_empty=True)
 
 	# Compute WER and BLEU here.
-	hash2metrics = compute_metrics(paired)
+	hash2metrics = compute_metrics(paired, args.no_embedding)
 
 	# For each hash, determine the values for each dimension of interest.
 	hash2dim_values, unique_dim_vals = load_dimensions()
 
-	# Create the tree-dictionary of metadata dimensions.
-	# Key Structure: speaker, metric_name, dimension, dim_value
-	# Values: List of distances (float).
-	accumulator: Dict[str, Dict[str, Dict[str, Dict[int, List[float]]]]] = {}
-	for speaker in SPEAKERS:
-		accumulator[speaker] = {}
-		for metric_name in METRIC_NAMES:
-			# Create the top level keys for embedding names.
-			accumulator[speaker][metric_name]: Dict[str, Dict[int, List[float]]] = {}
-			for dim in unique_dim_vals.keys():
-				# Create the keys for dimension names.
-				accumulator[speaker][metric_name][dim]: Dict[int, List[float]] = {}
-				for val in unique_dim_vals[dim]:
-					accumulator[speaker][metric_name][dim][val]: List[float] = []
-
-	# Populate the accumulator with our hash2metrics data.
-	for hash_ in hash2metrics:
-		# For each dimension, find the dimension value for this hash file.
-		for dim in config.DIMENSIONS:
-			if dim not in hash2dim_values[hash_]:
-				continue
-			dim_val_for_this_hash = hash2dim_values[hash_][dim]
-			for speaker in SPEAKERS:
+	# For each hash, output its metrics along with its relevant metadata.
+	out_fqn = 'table2.tsv'
+	with open(out_fqn, 'w') as f:
+		f.write('hash\tspeaker\tgender\tsess_num\tage\tphq\tWER\tBLEU\tCOSINE\tEMD\n')
+		# for each hash, write the metrics to file.
+		for hash_ in hash2metrics:
+			for speaker in hash2metrics[hash_]:
+				f.write(f'{hash_}\t{speaker}')
+				# Some hashes don't have all metadata.
+				for dim in config.DIMENSIONS:
+					meta_for_this_hash = hash2dim_values[hash_]
+					if dim in meta_for_this_hash:
+						val = meta_for_this_hash[dim]
+					else:
+						val = ''
+					f.write(f'\t{val}')
+						
 				for metric in METRIC_NAMES:
-					vals = hash2metrics[hash_][speaker][metric]
-					accumulator[speaker][metric][dim][dim_val_for_this_hash] += vals
-
-	# For each dimension and unique value, print the mean.
-	results_fqn = 'table2_session_metrics.csv'
-	with open(results_fqn, 'w') as f:
-		header = 'speaker,dim,val'
-		for name in METRIC_NAMES:
-			header += f',{name}_n,{name}_mean,{name}_std'
-		f.write(header + '\n')
-
-		for speaker in SPEAKERS:
-			for dim in unique_dim_vals.keys():
-				for val in unique_dim_vals[dim]:
-					result = f'{speaker},{dim},{val}'
-					for name in METRIC_NAMES:
-						mean, std, n = get_mean_std(speaker, name, accumulator, dim, val)
-						if mean is None:
-							result += ',,,'
-						else:
-							result += f',{n},{mean},{std}'
-					f.write(result + '\n')
-	print(results_fqn)
+					values = hash2metrics[hash_][speaker][metric]
+					if len(values) == 1:
+						value = values[0]
+					else:
+						value = ''
+					f.write(f'\t{value}')
+				f.write('\n')
+	print(out_fqn)
 
 
 def load_dimensions() -> (Dict[str, Dict[str, int]], Dict[str, List[int]]):
@@ -110,8 +89,11 @@ def load_dimensions() -> (Dict[str, Dict[str, int]], Dict[str, List[int]]):
 			v = row[key]
 			if str(v) == 'nan':
 				continue
-			else:
+			elif isinstance(v, float) or isinstance(v, int):
 				v = int(v)
+				values[key] = v
+				unique_dim_vals[key].add(v)
+			elif key == 'gender_imputed':
 				values[key] = v
 				unique_dim_vals[key].add(v)
 		hash2dims[hash_] = values
@@ -119,14 +101,19 @@ def load_dimensions() -> (Dict[str, Dict[str, int]], Dict[str, List[int]]):
 	return hash2dims, unique_dim_vals
 
 
-def compute_metrics(paired: Dict) -> Dict:
+def compute_metrics(paired: Dict, no_embedding: bool) -> Dict:
 	"""
 	Computes WER and BLEU.
+
+	Args:
+		paired: Paired dictionary.
+		no_embedding: If True, does not compute embedding metrics.
 	"""
 	# Load the Word2vec model.
-	print(f'Loading word2vec model...')
-	model = api.load('word2vec-google-news-300')
-	w2v_keys = set(model.vocab)
+	if not no_embedding:
+		print(f'Loading word2vec model...')
+		model = api.load('word2vec-google-news-300')
+		w2v_keys = set(model.vocab)
 
 	# Keys: Hash, speaker, metric_name
 	hash2metrics: Dict[str, Dict[str, Dict[str, List[float]]]] = {}
@@ -136,7 +123,7 @@ def compute_metrics(paired: Dict) -> Dict:
 	gts = {}
 	preds = {}
 	keys = list(paired.keys())
-	for i in tqdm(range(len(keys)), desc='Concatenating'):
+	for i in range(len(keys)):
 		gid = keys[i]
 		hash_ = paired[gid]['hash']
 		speaker = paired[gid]['speaker']
@@ -171,16 +158,17 @@ def compute_metrics(paired: Dict) -> Dict:
 
 			# Compute embedding distances.
 			# Error handling to avoid nan, inf, and zeros.
-			emd = model.wmdistance(gt.split(' '), pred.split(' '))  # Requires List[str] of words.
-			if not math.isnan(emd) and emd > 0 and not math.isinf(emd):
-				hash2metrics[hash_][speaker]['EMD'].append(emd)
+			if not no_embedding:
+				emd = model.wmdistance(gt.split(' '), pred.split(' '))  # Requires List[str] of words.
+				if not math.isnan(emd) and emd > 0 and not math.isinf(emd):
+					hash2metrics[hash_][speaker]['EMD'].append(emd)
 
-			gt_embed = eeu.encode_from_dict('word2vec', model, w2v_keys, gt)
-			pred_embed = eeu.encode_from_dict('word2vec', model, w2v_keys, pred)
-			if gt_embed is not None and pred_embed is not None:
-				cosine = scipy.spatial.distance.cosine(gt_embed, pred_embed)
-				if not math.isnan(cosine) and cosine > 0 and not math.isinf(cosine):
-					hash2metrics[hash_][speaker]['COSINE'].append(cosine)
+				gt_embed = eeu.encode_from_dict('word2vec', model, w2v_keys, gt)
+				pred_embed = eeu.encode_from_dict('word2vec', model, w2v_keys, pred)
+				if gt_embed is not None and pred_embed is not None:
+					cosine = scipy.spatial.distance.cosine(gt_embed, pred_embed)
+					if not math.isnan(cosine) and cosine > 0 and not math.isinf(cosine):
+						hash2metrics[hash_][speaker]['COSINE'].append(cosine)
 
 			# Store the result.
 			hash2metrics[hash_][speaker]['WER'].append(wer)
@@ -233,39 +221,7 @@ def get_mean_std(speaker: str, metric_name: str, accumulator: Dict, dim: str, va
 	return mean, std, n
 
 
-def sort_csv_by_hash(args, paired: Dict) -> Dict[str, Dict[str, List[float]]]:
-	"""
-	For each hash, collects all distances for that hash. Note that a single hash
-	may consist of multiple GIDs.
-
-	:param args: Argparse namespace.
-	:param paired: Paired data from the json file.
-	:return hash2metrics: Dictionary with key: hash, and value: dictionary of embedding distances.
-	"""
-	hash2metrics = {}
-	# For each distance file, populate the accumulators based on the gid's hash value.
-	for embedding_name in config.F.keys():
-		out_dir = os.path.join(config.DISTANCES_DIR, args.distance)
-		csv_fqn = os.path.join(out_dir, f'{embedding_name}.csv')
-		df = pd.read_csv(csv_fqn, sep=',')
-
-		# Loop over each row in the CSV distance file and add to the accumulator.
-		for i, row in df.iterrows():
-			# Get the data.
-			gid, value = str(int(row['gid'])), row['value']
-			hash = paired[gid]['hash']
-
-			# If new hash, populate the dict with accumulator lists.
-			if hash not in hash2metrics:
-				hash2metrics[hash] = {k: [] for k in config.F.keys()}
-
-			# Add to accumulator.
-			hash2metrics[hash][embedding_name].append(value)
-
-	return hash2metrics
-
-
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--distance', type=str, choices=['cosine', 'wasserstein'])
+	parser.add_argument('--no_embedding', action='store_true', help='If True, does not compute embeddings.')
 	main(parser.parse_args())

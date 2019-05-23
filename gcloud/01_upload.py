@@ -44,6 +44,6 @@ if __name__ == '__main__':
 	os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = gcloud.config.KEY
 	parser = argparse.ArgumentParser()
 	parser.add_argument('data_dir', type=str, help='Location of files to upload. This is a superset of `exclude_dir`.')
-	parser.add_argument('exclude_dir', type=str, default='', help='Location of folder containing exclude files.')
+	parser.add_argument('--exclude_dir', type=str, default='', help='Location of folder containing exclude files.')
 	args = parser.parse_args()
 	main(args)
