@@ -5,12 +5,15 @@ import os
 import sys
 import nltk
 import math
+import time
 import argparse
 import Levenshtein
 import numpy as np
 import pandas as pd
 from typing import *
 from tqdm import tqdm
+from queue import Queue
+from threading import Thread
 import scipy.spatial.distance
 import gensim.downloader as api
 
@@ -18,7 +21,7 @@ import evaluation.util
 from evaluation import config
 import evaluation.embeddings.util as eeu
 
-METRIC_NAMES = ['WER', 'BLEU', 'COSINE', 'EMD']
+METRIC_NAMES = ['WER', 'BLEU', 'COSINE', 'EMD', 'RAND_WER', 'RAND_BLEU', 'RAND_COSINE', 'RAND_EMD']
 SPEAKERS = ['T', 'P']
 
 
@@ -35,15 +38,20 @@ def main(args):
 	paired = evaluation.util.load_paired_json(skip_empty=True)
 
 	# Compute WER and BLEU here.
-	hash2metrics = compute_metrics(paired, args.no_embedding)
+	hash2metrics = compute_metrics(args, paired)
 
 	# For each hash, determine the values for each dimension of interest.
-	hash2dim_values, unique_dim_vals = load_dimensions()
+	hash2dim_values, _ = load_dimensions()
 
 	# For each hash, output its metrics along with its relevant metadata.
 	out_fqn = 'table2.tsv'
 	with open(out_fqn, 'w') as f:
-		f.write('hash\tspeaker\tgender\tsess_num\tage\tphq\tWER\tBLEU\tCOSINE\tEMD\n')
+		# Write the header.
+		f.write('hash\tspeaker\tgender\tsess_num\tage\tphq')
+		for metric in METRIC_NAMES:
+			f.write(f'\t{metric}')
+		f.write('\n')
+
 		# for each hash, write the metrics to file.
 		for hash_ in hash2metrics:
 			for speaker in hash2metrics[hash_]:
@@ -58,14 +66,11 @@ def main(args):
 					f.write(f'\t{val}')
 						
 				for metric in METRIC_NAMES:
-					values = hash2metrics[hash_][speaker][metric]
-					if len(values) == 1:
-						value = values[0]
-					else:
-						value = ''
+					value = hash2metrics[hash_][speaker][metric]
 					f.write(f'\t{value}')
 				f.write('\n')
 	print(out_fqn)
+	sys.exit(0)
 
 
 def load_dimensions() -> (Dict[str, Dict[str, int]], Dict[str, List[int]]):
@@ -101,7 +106,7 @@ def load_dimensions() -> (Dict[str, Dict[str, int]], Dict[str, List[int]]):
 	return hash2dims, unique_dim_vals
 
 
-def compute_metrics(paired: Dict, no_embedding: bool) -> Dict:
+def compute_metrics(args, paired: Dict) -> Dict:
 	"""
 	Computes WER and BLEU.
 
@@ -110,7 +115,8 @@ def compute_metrics(paired: Dict, no_embedding: bool) -> Dict:
 		no_embedding: If True, does not compute embedding metrics.
 	"""
 	# Load the Word2vec model.
-	if not no_embedding:
+	model, w2v_keys = None, None
+	if not args.no_embedding:
 		print(f'Loading word2vec model...')
 		model = api.load('word2vec-google-news-300')
 		w2v_keys = set(model.vocab)
@@ -118,13 +124,16 @@ def compute_metrics(paired: Dict, no_embedding: bool) -> Dict:
 	# Keys: Hash, speaker, metric_name
 	hash2metrics: Dict[str, Dict[str, Dict[str, List[float]]]] = {}
 	
+	# Create the workload queue.
+	q = Queue()
+	r = Queue()
+
 	# Concat all sentences for the speaker/patient into a single string.
 	# Keys: Hash, speaker. Value: List of phrases.
 	gts = {}
 	preds = {}
-	keys = list(paired.keys())
-	for i in range(len(keys)):
-		gid = keys[i]
+	added_to_queue = set()
+	for gid in paired.keys():
 		hash_ = paired[gid]['hash']
 		speaker = paired[gid]['speaker']
 		if speaker not in SPEAKERS:
@@ -137,44 +146,143 @@ def compute_metrics(paired: Dict, no_embedding: bool) -> Dict:
 		gts[hash_][speaker].append(paired[gid]['gt'])
 		preds[hash_][speaker].append(paired[gid]['pred'])
 
-	# For each hash, compute the metrics.
-	hash_keys = list(gts.keys())
-	for i in tqdm(range(len(hash_keys)), desc='Computing Metrics'):
-		hash_ = hash_keys[i]
-		for speaker in SPEAKERS:
-			# Create the single strings.
-			gt = ' '.join(gts[hash_][speaker])
-			pred = ' '.join(preds[hash_][speaker])
+		# Add this (hash, speaker) to the workload queue.
+		item = (hash_, speaker)
+		if item not in added_to_queue:
+			q.put(item)
+			added_to_queue.add(item)
 
-			# Compute WER and BLEU.
-			bleu = nltk.translate.bleu_score.sentence_bleu(references=[gt], hypothesis=pred)
-			wer = word_error_rate(pred, gt)
-			
-			# If new hash, populate the dict with accumulator lists.
-			if hash_ not in hash2metrics:
-				hash2metrics[hash_] = {}
-				for s in SPEAKERS:
-					hash2metrics[hash_][s] = {name: [] for name in METRIC_NAMES}
+	n_elements = q.qsize()
+	threads = []
+	# Create the threads.
+	for _ in range(args.n_threads):
+		t = Thread(target=worker, args=(args, q, r, model, w2v_keys, gts, preds))
+		threads.append(t)
 
-			# Compute embedding distances.
-			# Error handling to avoid nan, inf, and zeros.
-			if not no_embedding:
-				emd = model.wmdistance(gt.split(' '), pred.split(' '))  # Requires List[str] of words.
-				if not math.isnan(emd) and emd > 0 and not math.isinf(emd):
-					hash2metrics[hash_][speaker]['EMD'].append(emd)
+	# Start the threads.
+	for t in threads:
+		t.start()
 
-				gt_embed = eeu.encode_from_dict('word2vec', model, w2v_keys, gt)
-				pred_embed = eeu.encode_from_dict('word2vec', model, w2v_keys, pred)
-				if gt_embed is not None and pred_embed is not None:
-					cosine = scipy.spatial.distance.cosine(gt_embed, pred_embed)
-					if not math.isnan(cosine) and cosine > 0 and not math.isinf(cosine):
-						hash2metrics[hash_][speaker]['COSINE'].append(cosine)
+	print(f'Waiting for {args.n_threads} threads to finish...')
+	pbar_proc = Thread(target=progress_worker, args=(q, n_elements))
+	pbar_proc.start()
 
-			# Store the result.
-			hash2metrics[hash_][speaker]['WER'].append(wer)
-			hash2metrics[hash_][speaker]['BLEU'].append(bleu)
+	# Wait for them to finish.
+	for t in threads:
+		t.join()
+
+	# Read the result queue and populate our hash2metrics data structure.
+	while not r.empty():
+		hash_, speaker, metric, value = r.get()
+		
+		# If new hash, populate the dict with accumulator lists.
+		if hash_ not in hash2metrics:
+			hash2metrics[hash_] = {}
+			for s in SPEAKERS:
+				hash2metrics[hash_][s] = {name: 0 for name in METRIC_NAMES}
+	
+		hash2metrics[hash_][speaker][metric] = value
 
 	return hash2metrics
+
+
+def progress_worker(q: Queue, max_size: int):
+	"""Updates the progress bar."""
+	pbar = tqdm(total=max_size)
+	prev_count = 0
+	while q.qsize() > 0:
+		remaining = q.qsize()
+		completed = max_size - remaining
+		if completed > prev_count:
+			delta = completed - prev_count
+			prev_count = completed
+			pbar.update(delta)
+		time.sleep(0.1)
+
+
+def worker(args, q: Queue, r: Queue, model: Dict, w2v_keys: Set, gts: Dict, preds: Dict):
+	"""Multi-threaded implementation of the metrics computation."""
+	while not q.empty():
+		hash_, speaker = q.get()
+		# Create the single strings.
+		gt = ' '.join(gts[hash_][speaker])
+		pred = ' '.join(preds[hash_][speaker])
+		random_sentence = eeu.random_sentences(1, use_corpus=False)[0]
+
+		# Compute WER and BLEU.
+		bleu = nltk.translate.bleu_score.sentence_bleu(references=[gt], hypothesis=pred)
+		wer = word_error_rate(pred, gt)
+		rand_bleu = nltk.translate.bleu_score.sentence_bleu(references=[gt], hypothesis=random_sentence)
+		rand_wer = word_error_rate(random_sentence, gt)
+
+		# Compute embedding distances.
+		n_segments = len(gts[hash_][speaker])
+		accumulator = {
+			'EMD': [],
+			'COSINE': [],
+			'RAND_EMD': [],
+			'RAND_COSINE': [],
+		}
+
+		if not args.no_embedding:
+			for j in range(n_segments):
+				# Compare the GT vs pred.
+				segment_gt = gts[hash_][speaker][j]
+				segment_pred = preds[hash_][speaker][j]
+				cosine, emd = compute_distances(model, w2v_keys, segment_gt, segment_pred)
+				if is_valid_distance(emd):
+					accumulator['EMD'].append(emd)
+				if is_valid_distance(cosine):
+					accumulator['COSINE'].append(cosine)
+
+				# Generate a random sentence and measure the performance of a random sentence.
+				random_sentence = eeu.random_sentences(1, use_corpus=False)[0]
+				rand_cosine, rand_emd = compute_distances(model, w2v_keys, segment_gt, random_sentence)
+				if is_valid_distance(rand_emd):
+					accumulator['RAND_EMD'].append(rand_emd)
+				if is_valid_distance(rand_cosine):
+					accumulator['RAND_COSINE'].append(rand_cosine)
+
+			# Compute the session-level mean cosine and EMD.
+			for metric in ['EMD', 'COSINE', 'RAND_EMD', 'RAND_COSINE']:
+				avg = np.asarray(accumulator[metric]).mean()
+				r.put((hash_, speaker, metric, avg))
+
+		# Store the result.
+		r.put((hash_, speaker, 'WER', wer))
+		r.put((hash_, speaker, 'BLEU', bleu))
+		r.put((hash_, speaker, 'RAND_WER', rand_wer))
+		r.put((hash_, speaker, 'RAND_BLEU', rand_bleu))
+
+
+def compute_distances(model: Dict, keys: Set, sentence1: str, sentence2: str) -> (float, float):
+	"""Computes EMD and cosine distance."""
+	# EMD requires List[str] of words.
+	emd = model.wmdistance(sentence1.split(' '), sentence2.split(' '))
+
+	# Exctract embeddings.
+	embed1 = eeu.encode_from_dict('word2vec', model, keys, sentence1)
+	embed2 = eeu.encode_from_dict('word2vec', model, keys, sentence2)
+
+	# Cosine distance.
+	cosine = None
+	if embed1 is not None and embed2 is not None:
+		cosine = scipy.spatial.distance.cosine(embed1, embed2)
+
+	return cosine, emd
+
+
+def is_valid_distance(number: float):
+	"""Checks if the number is a valid (non inf, nan, etc.) distance."""
+	if number is None:
+		return False
+	if math.isnan(number):
+		return False
+	if math.isinf(number):
+		return False
+	if number < 0:
+		return False
+	return True
 
 
 def word_error_rate(pred: List[str], target: List[str]) -> float:
@@ -223,5 +331,6 @@ def get_mean_std(speaker: str, metric_name: str, accumulator: Dict, dim: str, va
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
+	parser.add_argument('--n_threads', default=1, type=int, help='Number of threads to use.')
 	parser.add_argument('--no_embedding', action='store_true', help='If True, does not compute embeddings.')
 	main(parser.parse_args())
