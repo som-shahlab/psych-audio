@@ -35,7 +35,7 @@ def main(args):
 	paired = evaluation.util.load_paired_json(skip_empty=True)
 
 	# Compute WER and BLEU here.
-	hash2metrics = compute_metrics(paired)
+	hash2metrics = compute_metrics(paired, args.no_embedding)
 
 	# For each hash, determine the values for each dimension of interest.
 	hash2dim_values, unique_dim_vals = load_dimensions()
@@ -62,7 +62,6 @@ def main(args):
 					if len(values) == 1:
 						value = values[0]
 					else:
-						print(values)
 						value = ''
 					f.write(f'\t{value}')
 				f.write('\n')
@@ -102,14 +101,19 @@ def load_dimensions() -> (Dict[str, Dict[str, int]], Dict[str, List[int]]):
 	return hash2dims, unique_dim_vals
 
 
-def compute_metrics(paired: Dict) -> Dict:
+def compute_metrics(paired: Dict, no_embedding: bool) -> Dict:
 	"""
 	Computes WER and BLEU.
+
+	Args:
+		paired: Paired dictionary.
+		no_embedding: If True, does not compute embedding metrics.
 	"""
-	# # Load the Word2vec model.
-	# print(f'Loading word2vec model...')
-	# model = api.load('word2vec-google-news-300')
-	# w2v_keys = set(model.vocab)
+	# Load the Word2vec model.
+	if not no_embedding:
+		print(f'Loading word2vec model...')
+		model = api.load('word2vec-google-news-300')
+		w2v_keys = set(model.vocab)
 
 	# Keys: Hash, speaker, metric_name
 	hash2metrics: Dict[str, Dict[str, Dict[str, List[float]]]] = {}
@@ -154,16 +158,17 @@ def compute_metrics(paired: Dict) -> Dict:
 
 			# Compute embedding distances.
 			# Error handling to avoid nan, inf, and zeros.
-			# emd = model.wmdistance(gt.split(' '), pred.split(' '))  # Requires List[str] of words.
-			# if not math.isnan(emd) and emd > 0 and not math.isinf(emd):
-			# 	hash2metrics[hash_][speaker]['EMD'].append(emd)
+			if not no_embedding:
+				emd = model.wmdistance(gt.split(' '), pred.split(' '))  # Requires List[str] of words.
+				if not math.isnan(emd) and emd > 0 and not math.isinf(emd):
+					hash2metrics[hash_][speaker]['EMD'].append(emd)
 
-			# gt_embed = eeu.encode_from_dict('word2vec', model, w2v_keys, gt)
-			# pred_embed = eeu.encode_from_dict('word2vec', model, w2v_keys, pred)
-			# if gt_embed is not None and pred_embed is not None:
-			# 	cosine = scipy.spatial.distance.cosine(gt_embed, pred_embed)
-			# 	if not math.isnan(cosine) and cosine > 0 and not math.isinf(cosine):
-			# 		hash2metrics[hash_][speaker]['COSINE'].append(cosine)
+				gt_embed = eeu.encode_from_dict('word2vec', model, w2v_keys, gt)
+				pred_embed = eeu.encode_from_dict('word2vec', model, w2v_keys, pred)
+				if gt_embed is not None and pred_embed is not None:
+					cosine = scipy.spatial.distance.cosine(gt_embed, pred_embed)
+					if not math.isnan(cosine) and cosine > 0 and not math.isinf(cosine):
+						hash2metrics[hash_][speaker]['COSINE'].append(cosine)
 
 			# Store the result.
 			hash2metrics[hash_][speaker]['WER'].append(wer)
@@ -218,5 +223,5 @@ def get_mean_std(speaker: str, metric_name: str, accumulator: Dict, dim: str, va
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--distance', type=str, choices=['cosine', 'wasserstein'])
+	parser.add_argument('--no_embedding', action='store_true', help='If True, does not compute embeddings.')
 	main(parser.parse_args())

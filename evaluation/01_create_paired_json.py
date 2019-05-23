@@ -4,6 +4,15 @@ creates a nice paired-sentence JSON file which contains both the ground
 truth and transcribed phrases, as well as some metadata.
 
 This standardized format is used for all downstream metrics computation.
+
+Example entry:
+ '556': {
+	 'hash': '0dd01803e57a3b95fcfab584bfb09aa604d80c0452ce5cd90f02669b0f9b9b5e',
+	 'ts': 102.0,
+	 'speaker': 'P',
+	 'gt': 'hello there how are you doing',
+	 'pred': 'hello their how arent you doing'
+	}
 """
 import re
 import os
@@ -33,7 +42,7 @@ def main(args):
 	gid = 0  # Global sentence ID.
 	for i in tqdm(range(len(ls)), desc='Processing Files'):
 		filename = ls[i]
-		hash = filename.replace('.json', '')
+		hash_ = filename.replace('.json', '')
 		# Load and standardize the ground truth.
 		machine = load_json(os.path.join(args.machine_dir, filename))
 		gt = load_json(os.path.join(args.gt_dir, filename))
@@ -57,7 +66,7 @@ def main(args):
 		# Create the final dictionary.
 		for j in range(len(gt_segments)):
 			value = {
-				'hash': hash,
+				'hash': hash_,
 				'ts': seg_ts[j],
 				'speaker': seg_tag[j],
 				'gt': gt_segments[j],
@@ -71,6 +80,28 @@ def main(args):
 		json.dump(paired, f, indent=2)
 
 
+def is_repeated(arr: List[str], repeat: int) -> bool:
+	"""
+	Checks whether a segment array of strings is doubled. That is,
+	the first half contains the same elements as the second half.
+	:param arr: List of strings.
+	:param repeat: Check if `arr` is repeated `repeat` times.
+	:return: True if array is doubled, False otherwise.
+	"""
+	if len(arr) % repeat != 0:
+		return False
+
+	pointers = np.arange(0, repeat) * int(len(arr) / repeat)
+
+	while pointers[-1] < len(arr):
+		unique = set([arr[idx] for idx in pointers])
+		if len(unique) > 1:
+			return False
+		pointers += 1
+
+	return True
+
+
 def is_doubled(arr: List[str]) -> bool:
 	"""
 	Checks whether a segment array of strings is doubled. That is,
@@ -78,7 +109,7 @@ def is_doubled(arr: List[str]) -> bool:
 	:param arr: List of strings.
 	:return: True if array is doubled, False otherwise.
 	"""
-	if len(arr) % 2 == 1:
+	if len(arr) % 2 != 0:
 		return False
 
 	first = 0
@@ -114,8 +145,10 @@ def create_segments(seg_ts: List[float], data: Dict) -> List[str]:
 			buffer = []
 			for j in idx:
 				buffer.append(data['words'][j])
-			if is_doubled(buffer):
+			if is_repeated(buffer, 2):
 				clean = buffer[:int(len(buffer)/2)]
+			elif is_repeated(buffer, 3):
+				clean = buffer[:int(len(buffer)/3)]
 			else:
 				clean = buffer
 			sentence = ' '.join(clean)
@@ -186,6 +219,9 @@ def load_json(fqn: str):
 	# For each word, add it to our list.
 	for B in A['results']:
 		for C in B['alternatives']:
+			# Sometimes the 'words' key is not present.
+			if 'words' not in C:
+				continue
 			for D in C['words']:
 				# Get the core content.
 				start_time = float(D['startTime'].replace('s', ''))
