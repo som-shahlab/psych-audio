@@ -40,53 +40,33 @@ def main(args):
 	# For each hash, determine the values for each dimension of interest.
 	hash2dim_values, unique_dim_vals = load_dimensions()
 
-	# Create the tree-dictionary of metadata dimensions.
-	# Key Structure: speaker, metric_name, dimension, dim_value
-	# Values: List of distances (float).
-	accumulator: Dict[str, Dict[str, Dict[str, Dict[int, List[float]]]]] = {}
-	for speaker in SPEAKERS:
-		accumulator[speaker] = {}
-		for metric_name in METRIC_NAMES:
-			# Create the top level keys for embedding names.
-			accumulator[speaker][metric_name]: Dict[str, Dict[int, List[float]]] = {}
-			for dim in unique_dim_vals.keys():
-				# Create the keys for dimension names.
-				accumulator[speaker][metric_name][dim]: Dict[int, List[float]] = {}
-				for val in unique_dim_vals[dim]:
-					accumulator[speaker][metric_name][dim][val]: List[float] = []
-
-	# Populate the accumulator with our hash2metrics data.
-	for hash_ in hash2metrics:
-		# For each dimension, find the dimension value for this hash file.
-		for dim in config.DIMENSIONS:
-			if dim not in hash2dim_values[hash_]:
-				continue
-			dim_val_for_this_hash = hash2dim_values[hash_][dim]
-			for speaker in SPEAKERS:
+	# For each hash, output its metrics along with its relevant metadata.
+	out_fqn = 'table2.tsv'
+	with open(out_fqn, 'w') as f:
+		f.write('hash\tspeaker\tgender\tsess_num\tage\tphq\tWER\tBLEU\tCOSINE\tEMD\n')
+		# for each hash, write the metrics to file.
+		for hash_ in hash2metrics:
+			for speaker in hash2metrics[hash_]:
+				f.write(f'{hash_}\t{speaker}')
+				# Some hashes don't have all metadata.
+				for dim in config.DIMENSIONS:
+					meta_for_this_hash = hash2dim_values[hash_]
+					if dim in meta_for_this_hash:
+						val = meta_for_this_hash[dim]
+					else:
+						val = ''
+					f.write(f'\t{val}')
+						
 				for metric in METRIC_NAMES:
-					vals = hash2metrics[hash_][speaker][metric]
-					accumulator[speaker][metric][dim][dim_val_for_this_hash] += vals
-
-	# For each dimension and unique value, print the mean.
-	results_fqn = 'table2_session_metrics.csv'
-	with open(results_fqn, 'w') as f:
-		header = 'speaker,dim,val'
-		for name in METRIC_NAMES:
-			header += f',{name}_n,{name}_mean,{name}_std'
-		f.write(header + '\n')
-
-		for speaker in SPEAKERS:
-			for dim in unique_dim_vals.keys():
-				for val in unique_dim_vals[dim]:
-					result = f'{speaker},{dim},{val}'
-					for name in METRIC_NAMES:
-						mean, std, n = get_mean_std(speaker, name, accumulator, dim, val)
-						if mean is None:
-							result += ',,,'
-						else:
-							result += f',{n},{mean},{std}'
-					f.write(result + '\n')
-	print(results_fqn)
+					values = hash2metrics[hash_][speaker][metric]
+					if len(values) == 1:
+						value = values[0]
+					else:
+						print(values)
+						value = ''
+					f.write(f'\t{value}')
+				f.write('\n')
+	print(out_fqn)
 
 
 def load_dimensions() -> (Dict[str, Dict[str, int]], Dict[str, List[int]]):
@@ -139,7 +119,7 @@ def compute_metrics(paired: Dict) -> Dict:
 	gts = {}
 	preds = {}
 	keys = list(paired.keys())
-	for i in tqdm(range(len(keys)), desc='Concatenating'):
+	for i in range(len(keys)):
 		gid = keys[i]
 		hash_ = paired[gid]['hash']
 		speaker = paired[gid]['speaker']
