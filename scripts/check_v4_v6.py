@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 jasa_dir = '/vol0/psych_audio/jasa_format'
 
-def main():
+def main(args):
 	v4 = sorted(os.listdir(os.path.join(jasa_dir, 'v4', 'flac')))
 	v6 = sorted(os.listdir(os.path.join(jasa_dir, 'v6', 'flac')))
 
@@ -52,4 +52,4 @@ def main():
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	args = parser.parse_args()
-	main()
+	main(args)
