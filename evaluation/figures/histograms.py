@@ -9,6 +9,7 @@ import sys
 import numpy as np
 import pandas as pd
 from typing import *
+import scipy.stats
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 from matplotlib.ticker import FormatStrFormatter
@@ -36,11 +37,11 @@ def main():
 		rand_perf = df[f'RAND_{metric}'].values.mean()
 		out_fqn = os.path.join('results', f'hist_gender_{metric}.png')
 		create_dual_hist(metric, out_fqn, male, female, rand_perf, perfect_perf, labels=['Male', 'Female'])
-
-		therapist = df[df['speaker'] == 'T'][metric].values
-		patient = df[df['speaker'] == 'P'][metric].values
-		out_fqn = os.path.join('results', f'hist_speaker_{metric}.png')
-		create_dual_hist(metric, out_fqn, therapist, patient, rand_perf, perfect_perf, labels=['Therapist', 'Patient'])
+		break
+		# therapist = df[df['speaker'] == 'T'][metric].values
+		# patient = df[df['speaker'] == 'P'][metric].values
+		# out_fqn = os.path.join('results', f'hist_speaker_{metric}.png')
+		# create_dual_hist(metric, out_fqn, therapist, patient, rand_perf, perfect_perf, labels=['Therapist', 'Patient'])
 
 
 
@@ -96,6 +97,27 @@ def create_dual_hist(metric, out_fqn: str, arr1: np.ndarray, arr2: np.ndarray, r
 	axes[2].vlines(x=rand_perf, ymin=0, ymax=max(y1.max(), y2.max()) * .8, linestyles='dashed', color='k')
 
 	plt.savefig(out_fqn, bbox_inches='tight')
+	print(out_fqn)
+	statistical_tests(arr1, arr2)
+
+
+def statistical_tests(arr1: np.ndarray, arr2: np.ndarray):
+	"""Runs our suite of statistial test."""
+	out_fqn = 'qq.png'
+	fig, axes = plt.subplots(
+		# figsize=(width, height)
+		nrows=1, ncols=2, figsize=(16, 7), sharex='col',
+		gridspec_kw={'width_ratios': [1, 1]}
+	)
+
+	# Compute t-test/p-values.
+	scipy.stats.probplot(arr1, plot=axes[0])
+	scipy.stats.probplot(arr2, plot=axes[1])
+	statistic1, pvalue1 = scipy.stats.shapiro(arr1)
+	statistic2, pvalue2 = scipy.stats.shapiro(arr2)
+	print(f'Arr1: Statistic: {statistic1:.4f}\tP-Value: {pvalue1:.4f}')
+	print(f'Arr2: Statistic: {statistic2:.4f}\tP-Value: {pvalue2:.4f}')
+	plt.savefig(out_fqn)
 	print(out_fqn)
 
 
