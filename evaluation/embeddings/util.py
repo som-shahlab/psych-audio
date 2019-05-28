@@ -12,7 +12,7 @@ import evaluation.embeddings.util
 from evaluation import config
 
 
-def random_sentence(vocab: List[str]) -> str:
+def _random_sentence(vocab: List[str]) -> str:
 	"""
 	Generates a completely random sentence using the local unix dictionary.
 	
@@ -69,7 +69,7 @@ def random_sentences(n: int, use_corpus: bool = False) -> List[str]:
 
 		# Create `n` sentences.
 		for _ in range(n):
-			sentences.append(random_sentence(vocab))
+			sentences.append(_random_sentence(vocab))
 
 	return sentences
 
