@@ -76,7 +76,7 @@ def gt2dict(trans_fqn: str) -> (List[str], Dict):
 
 			for phrase in subphrases:
 				time_str, text = phrase
-				mm, ss = get_mmss_from_time(time_str)
+				mm, ss = preproc.util.get_mmss_from_time(time_str)
 				ts = f'{mm * 60 + ss}.000s'
 				words = []
 				for x in text.split(' '):
@@ -149,22 +149,6 @@ def get_subphrases(line: str) -> List[Tuple[str, str]]:
 			subphrases.append(item)
 
 	return subphrases
-
-
-def get_mmss_from_time(text: str) -> (int, int):
-	"""
-	Returns the minutes and seconds from `[TIME: MM:SS]`.
-
-	:param text: Text in the form `[TIME: MM:SS]`
-	:return: Minutes and seconds as ints.
-	"""
-	matches = [m.span() for m in re.finditer('([0-9]){2}', text)]
-	if len(matches) != 2:
-		print(f'Malformed timestamp: {text}')
-		return None
-	minute = int(text[matches[0][0]:matches[0][1]])
-	seconds = int(text[matches[1][0]:matches[1][1]])
-	return minute, seconds
 
 
 if __name__ == '__main__':

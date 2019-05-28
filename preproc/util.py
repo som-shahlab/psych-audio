@@ -166,3 +166,19 @@ def remove_extension(filename: str) -> str:
 		filename = filename.replace(ext, '')
 		filename = filename.replace(ext.upper(), '')
 	return filename
+
+
+def get_mmss_from_time(text: str) -> (int, int):
+	"""
+	Returns the minutes and seconds from `[TIME: MM:SS]`.
+
+	:param text: Text in the form `[TIME: MM:SS]`
+	:return: Minutes and seconds as ints.
+	"""
+	matches = [m.span() for m in re.finditer('([0-9]){2}', text)]
+	if len(matches) != 2:
+		print(f'Malformed timestamp: {text}')
+		return None
+	minute = int(text[matches[0][0]:matches[0][1]])
+	seconds = int(text[matches[1][0]:matches[1][1]])
+	return minute, seconds

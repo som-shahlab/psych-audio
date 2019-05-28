@@ -334,3 +334,4 @@ if __name__ == '__main__':
 	parser.add_argument('--n_threads', default=4, type=int, help='Number of threads to use.')
 	parser.add_argument('--no_embedding', action='store_true', help='If True, does not compute embeddings.')
 	main(parser.parse_args())
+	
