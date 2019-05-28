@@ -331,6 +331,6 @@ def get_mean_std(speaker: str, metric_name: str, accumulator: Dict, dim: str, va
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--n_threads', default=1, type=int, help='Number of threads to use.')
+	parser.add_argument('--n_threads', default=4, type=int, help='Number of threads to use.')
 	parser.add_argument('--no_embedding', action='store_true', help='If True, does not compute embeddings.')
 	main(parser.parse_args())

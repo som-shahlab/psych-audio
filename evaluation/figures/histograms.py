@@ -31,17 +31,19 @@ def main():
 	
 	# Compute gender plot.
 	for metric in METRICS:
+		print(f'------ Gender: {metric} ------')
 		perfect_perf = 1 if metric == 'BLEU' else 0
 		male = df[df['gender'] == 'Male'][metric].values
 		female = df[df['gender'] == 'Female'][metric].values
 		rand_perf = df[f'RAND_{metric}'].values.mean()
 		out_fqn = os.path.join('results', f'hist_gender_{metric}.png')
 		create_dual_hist(metric, out_fqn, male, female, rand_perf, perfect_perf, labels=['Male', 'Female'])
-		break
-		# therapist = df[df['speaker'] == 'T'][metric].values
-		# patient = df[df['speaker'] == 'P'][metric].values
-		# out_fqn = os.path.join('results', f'hist_speaker_{metric}.png')
-		# create_dual_hist(metric, out_fqn, therapist, patient, rand_perf, perfect_perf, labels=['Therapist', 'Patient'])
+		
+		print(f'------ Speaker: {metric} ------')
+		therapist = df[df['speaker'] == 'T'][metric].values
+		patient = df[df['speaker'] == 'P'][metric].values
+		out_fqn = os.path.join('results', f'hist_speaker_{metric}.png')
+		create_dual_hist(metric, out_fqn, therapist, patient, rand_perf, perfect_perf, labels=['Therapist', 'Patient'])
 
 
 
@@ -97,7 +99,6 @@ def create_dual_hist(metric, out_fqn: str, arr1: np.ndarray, arr2: np.ndarray, r
 	axes[2].vlines(x=rand_perf, ymin=0, ymax=max(y1.max(), y2.max()) * .8, linestyles='dashed', color='k')
 
 	plt.savefig(out_fqn, bbox_inches='tight')
-	print(out_fqn)
 	statistical_tests(arr1, arr2)
 
 
@@ -115,10 +116,13 @@ def statistical_tests(arr1: np.ndarray, arr2: np.ndarray):
 	scipy.stats.probplot(arr2, plot=axes[1])
 	statistic1, pvalue1 = scipy.stats.shapiro(arr1)
 	statistic2, pvalue2 = scipy.stats.shapiro(arr2)
-	print(f'Arr1: Statistic: {statistic1:.4f}\tP-Value: {pvalue1:.4f}')
-	print(f'Arr2: Statistic: {statistic2:.4f}\tP-Value: {pvalue2:.4f}')
+	print(f'Shapiro-Wilk: Arr1: Statistic: {statistic1:.4f}\tP-Value: {pvalue1:.4f}')
+	print(f'Shapiro-Wilk: Arr2: Statistic: {statistic2:.4f}\tP-Value: {pvalue2:.4f}')
+
+	stat, pval = scipy.stats.mannwhitneyu(arr1, arr2)
+	print(f'Mann-Whitney: Statistic: {stat:.4f}\tP-Value: {pval:.4f}')
 	plt.savefig(out_fqn)
-	print(out_fqn)
+	# print(out_fqn)
 
 
 def fit_normal_line(arr: np.ndarray, n_bins: int, max_val) -> (np.ndarray, np.ndarray):
