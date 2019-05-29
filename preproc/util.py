@@ -199,7 +199,7 @@ def get_subphrases(line: str) -> List[Tuple[str, str]]:
 	# Find all timestamps on this line.
 	# Finds: `[TIME: MM:SS]:` with or without the leading or ending colon.
 	patterns = [
-		(r'\[+TIME: ([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]\] ', len('[TIME: MM:SS]')),
+		(r'\[+TIME: ([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]\]', len('[TIME: MM:SS]')),
 		(r'\[+TIME: ([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]\]: ', len('[TIME: MM:SS]:')),
 		(r'\[+TIME ([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]\]', len('[TIME MM:SS]:')),
 		(r'\[+TIME ([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]\]:', len('[TIME MM:SS]:')),

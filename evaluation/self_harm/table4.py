@@ -54,12 +54,17 @@ def generate_paired(examples: List) -> Dict:
 
         # Get the start and end time for this example.
         start_ts, end_ts = get_start_end_ts(data, start, end)
+
+        if start_ts == -1:
+            continue
         
         # Get the canonicalized GT and machine's prediction.
         gt, pred, confidences = get_paired_phrase(hash_, start_ts, end_ts)
+        print('-' * 80)
+        print(f'{hash_} {start_ts} {end_ts}')
         print(gt)
         print(pred)
-        print(confidences)
+        # print(confidences)
 
     return result
 
@@ -89,7 +94,7 @@ def get_paired_phrase(hash_: str, start_ts: float, end_ts: float) -> Dict:
     gt_items = get_words_between(gt_fqn, start_ts, end_ts)
 
     pred_fqn = os.path.join(JASA_DIR, 'machine-video', f'{hash_}.json')
-    pred_items = get_words_between(pred_fqn, start_ts, end_ts)
+    pred_items = get_words_between(pred_fqn, start_ts, end_ts, is_pred=True)
 
     # Compose the final strings and confidence array.
     for item in gt_items:
@@ -105,7 +110,7 @@ def get_paired_phrase(hash_: str, start_ts: float, end_ts: float) -> Dict:
     return gt, pred, confidences
 
 
-def get_words_between(json_fqn: str, start_ts: float, end_ts: float):
+def get_words_between(json_fqn: str, start_ts, end_ts, is_pred=False):
     """
     Loads a json transcription file and returns the words between `start` and
     `end` timestamps (in seconds).
@@ -125,6 +130,9 @@ def get_words_between(json_fqn: str, start_ts: float, end_ts: float):
         start_ts (float): Start timestamp in seconds.
         end_ts (float): End timestamp in seconds.
     """
+    if is_pred:
+        start_ts -= 10
+        end_ts += 10
     with open(json_fqn, 'r') as f:
         A = json.load(f)
 
@@ -142,8 +150,7 @@ def get_words_between(json_fqn: str, start_ts: float, end_ts: float):
                 if ts < start_ts or ts > end_ts:
                     continue
 
-                item = {}
-                item['word'] = preproc.util.canonicalize_word(D['word'])
+                item = {'word': preproc.util.canonicalize_word(D['word'])}
                 item['start_ts'] = ts
                 if 'speakerTag' in D.keys():
                     item['speaker_tag'] = D['speakerTag']
@@ -186,21 +193,32 @@ def get_start_end_ts(full_text: str, start: int, end: int) -> (float, float):
     start_min, start_sec = preproc.util.get_mmss_from_time(start_ts_string)
     start_ts = float(start_min * 60 + start_sec)
 
-    # subphrases = preproc.util.get_subphrases(line)
-    # for phrase in subphrases:
-    #     time_str, text = phrase
-    # Find the starting time of the next line. This will be used as the
-    # ending time of the first line.
-    substart_idx, subend_idx = -1, -1
-    for i in range(end, len(full_text)):
-        if full_text[i] == '[':
-            substart_idx = i
-        elif full_text[i] == ']':
-            subend_idx = i
-            break
-    
-    end_ts_string = full_text[substart_idx:subend_idx]
-    end_min, end_sec = preproc.util.get_mmss_from_time(end_ts_string)
+    # Get a list of locations of the [TIME: HH:MM] string.
+    subphrase = preproc.util.get_subphrases(full_text[end_of_line:])
+
+    # Sometimes regex will fail. Therefore we have to manually check.
+    if len(subphrase) == 0:
+        pointer = -1
+        forward_context = full_text[end_of_line:end_of_line+100]
+        W = 4
+        # Find the location of TIME.
+        for i in range(end_of_line, len(full_text) - W):
+            window = full_text[i:i+W]
+            if window == 'TIME':
+                pointer = i
+                break
+
+        # Find the precise location of the brackets.
+        context = full_text[pointer-1:pointer+13]
+        bracket1 = context.find('[')
+        bracket2 = context.find(']')
+
+        end_time_str = context[bracket1:bracket2+1]
+    else:
+        # Get the first result (need to reverse it).
+        end_time_str, _ = subphrase[-1]
+
+    end_min, end_sec = preproc.util.get_mmss_from_time(end_time_str)
     end_ts = float(end_min * 60 + end_sec)
 
     return start_ts, end_ts
