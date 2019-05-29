@@ -186,6 +186,9 @@ def get_start_end_ts(full_text: str, start: int, end: int) -> (float, float):
     start_min, start_sec = preproc.util.get_mmss_from_time(start_ts_string)
     start_ts = float(start_min * 60 + start_sec)
 
+    # subphrases = preproc.util.get_subphrases(line)
+    # for phrase in subphrases:
+    #     time_str, text = phrase
     # Find the starting time of the next line. This will be used as the
     # ending time of the first line.
     substart_idx, subend_idx = -1, -1
