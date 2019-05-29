@@ -7,6 +7,7 @@ import nltk
 import argparse
 import numpy as np
 import pandas as pd
+import preproc.util
 import evaluation.util
 from evaluation.self_harm import config
 
@@ -36,7 +37,7 @@ def main():
 			if isinstance(pred_word, float):
 				pred_word = ''
 
-			gt.append(gt_word)
+			gt.append(preproc.util.canonicalize_word(gt_word))
 			pred.append(pred_word)
 			conf.append(row['conf'])
 

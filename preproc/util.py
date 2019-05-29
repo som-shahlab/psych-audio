@@ -48,6 +48,8 @@ def canonicalize_word(word: str) -> str:
 		return ''
 		# word = re.sub('\[.*\]|\s-\s.*', '', word)
 
+	word = word.replace('—', ' ')
+
 	# Remove punctuation and other symbols.
 	word = word.translate(str.maketrans('', '', string.punctuation))
 	for sym in remove_symbols:

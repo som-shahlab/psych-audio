@@ -22,20 +22,27 @@ def main(args):
     # For each example, ask the user to select the start and end word
     # from the predicted text.
     for gid in paired.keys():
+        if gid < args.start:
+            continue
         item = paired[gid]
         print('-' * 80)
-        gt = item['phrase']
+        gt = preproc.util.canonicalize_sentence(item['phrase'])
         pred = item['pred']
         tokens = pred.split(' ')
         for i, word in enumerate(tokens):
             print(f'{i}\t{word}')
         
-        print(f'GT: {gt}')
-        start = int(input('Start index? '))
-        end = int(input('End index? '))
-        
-        subset_words = tokens[start:end+1]
-        subset_conf = item['conf'][start:end+1]
+        print(f'GT ({gid}): {gt}')
+        start = input('Start index? ')
+        end = input('End index? ')
+        if start != '' and end != '':
+            start = int(start)
+            end = int(end)
+            subset_words = tokens[start:end+1]
+            subset_conf = item['conf'][start:end+1]
+        else:
+            subset_words = [' ']
+            subset_conf = [1.0]
 
         # Create the pandas dataframe.
         df_gt = []
@@ -172,8 +179,8 @@ def get_words_between(json_fqn: str, start_ts, end_ts, is_pred=False):
         end_ts (float): End timestamp in seconds.
     """
     if is_pred:
-        start_ts -= 5
-        end_ts += 5
+        start_ts -= 10
+        end_ts += 10
     with open(json_fqn, 'r') as f:
         A = json.load(f)
 
@@ -282,6 +289,6 @@ def load_annotations() -> List[Tuple]:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--no_embedding', action='store_true',
-                        help='If True, does not compute embeddings.')
+    parser.add_argument('--start', default=1, type=int,
+        help='Example to start from.')
     main(parser.parse_args())
