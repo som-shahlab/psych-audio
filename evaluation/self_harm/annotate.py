@@ -240,7 +240,6 @@ def get_start_end_ts(full_text: str, start: int, end: int) -> (float, float):
     # Sometimes regex will fail. Therefore we have to manually check.
     if len(subphrase) == 0:
         pointer = -1
-        forward_context = full_text[end_of_line:end_of_line+100]
         W = 4
         # Find the location of TIME.
         for i in range(end_of_line, len(full_text) - W):
