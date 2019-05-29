@@ -4,6 +4,7 @@ This file contains helper functions for the other pre-processing files.
 import os
 import re
 import string
+from typing import *
 
 # Used for converting numbers to words.
 num2words1 = {
@@ -46,6 +47,8 @@ def canonicalize_word(word: str) -> str:
 	if '[' in word and ']' in word:
 		return ''
 		# word = re.sub('\[.*\]|\s-\s.*', '', word)
+
+	word = word.replace('—', ' ')
 
 	# Remove punctuation and other symbols.
 	word = word.translate(str.maketrans('', '', string.punctuation))
@@ -166,3 +169,72 @@ def remove_extension(filename: str) -> str:
 		filename = filename.replace(ext, '')
 		filename = filename.replace(ext.upper(), '')
 	return filename
+
+
+def get_mmss_from_time(text: str) -> (int, int):
+	"""
+	Returns the minutes and seconds from `[TIME: MM:SS]`.
+
+	:param text: Text in the form `[TIME: MM:SS]`
+	:return: Minutes and seconds as ints.
+	"""
+	matches = [m.span() for m in re.finditer('([0-9]){2}', text)]
+	if len(matches) != 2:
+		print(f'Malformed timestamp: {text}')
+		return None
+	minute = int(text[matches[0][0]:matches[0][1]])
+	seconds = int(text[matches[1][0]:matches[1][1]])
+	return minute, seconds
+
+
+def get_subphrases(line: str) -> List[Tuple[str, str]]:
+	"""
+	Given a ground truth transcription, extracts all subphrases.
+	A subphrase is defined as a set of words with a single timestamp.
+	In our ground truth file, it is possible for a single line to contain multiple timestamps,
+	corresponding to different phrases. This function extracts each individual phrase
+	so we can create the json file with precise timestamps.
+
+	:param line: Text from the transcription file.
+	:return: List of subphrases, where each subphrase is defined by the timestamp and words.
+	"""
+	# Find all timestamps on this line.
+	# Finds: `[TIME: MM:SS]:` with or without the leading or ending colon.
+	patterns = [
+		(r'\[+TIME: ([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]\]', len('[TIME: MM:SS]')),
+		(r'\[+TIME: ([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]\]: ', len('[TIME: MM:SS]:')),
+		(r'\[+TIME ([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]\]', len('[TIME MM:SS]:')),
+		(r'\[+TIME ([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]\]:', len('[TIME MM:SS]:')),
+	]
+
+	meta = []
+	for item in patterns:
+		p, _ = item
+		idxs = [m.span() for m in re.finditer(p, line)]
+		meta += idxs
+	meta = list(reversed(meta))
+
+	# Only one phrase in this line.
+	subphrases = []
+	if len(meta) == 1:
+		start, end = meta[0]
+		ts, text = line[start:end], line[end:]
+		item = (ts, text)
+		subphrases.append(item)
+	elif len(meta) > 1:
+		# Extract the text for the subphrase.
+		for i in range(len(meta)):
+			start, end = meta[i]
+			ts = line[start:end]
+			text_start = end
+			# If this is the last phrase.
+			if i == len(meta) - 1:
+				text = line[text_start:]
+			else:
+				next_idx, _ = meta[i + 1]
+				text = line[text_start:next_idx]
+
+			item = (ts, text)
+			subphrases.append(item)
+
+	return subphrases
