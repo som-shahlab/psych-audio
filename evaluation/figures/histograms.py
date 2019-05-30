@@ -138,18 +138,14 @@ def fit_normal_line(arr: np.ndarray, n_bins: int, max_val) -> (np.ndarray, np.nd
 		y: Y values of the fitted line.
 	"""
 	mu, sigma = arr.mean(), arr.std()
-	x = np.arange(0, max_val, 0.001)
+	x = np.arange(0, max_val, 0.01)
 	y = ((1 / (np.sqrt(2 * np.pi) * sigma)) * np.exp(-0.5 * (1 / sigma * (x - mu)) ** 2))
+	y = y / y.sum()
 
-	# Need to convert from normal distribution (PDF) into the histogram count version.
-	# To do so, we need to compute a scaling factor. We can compute the scaling factor
-	# by looking at np.histogram with and without the density=True arg.
-	vals_original, _ = np.histogram(arr, n_bins)
-	vals_density, _ = np.histogram(arr, n_bins, density=True)
-	scaling = vals_original[0] / vals_density[0]  # Un-normalized density -> counts
-	scaling = scaling / vals_original.sum()  # counts -> PDF.
-	y = y * scaling
 	return x, y
+
+
+# def iteratively_find_width(mean, std, target_prob):	
 
 
 if __name__ == '__main__':
