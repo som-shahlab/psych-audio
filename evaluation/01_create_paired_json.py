@@ -172,7 +172,7 @@ def create_segments(seg_ts: List[float], data: Dict) -> List[str]:
 	# 	seg = ' '.join(buffer)
 	# 	segments.append(seg)
 
-	# segments = [preproc.util.canonicalize_sentence(x) for x in segments]
+	segments = [preproc.util.canonicalize_sentence(x) for x in segments]
 	return segments
 
 
