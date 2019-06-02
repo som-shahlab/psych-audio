@@ -29,7 +29,10 @@ BLACK = (0, 0, 0)
 def main():
 	df = pd.read_csv('results/table2.tsv', sep='\t')
 	
-	# Compute gender plot.
+	# Compute the aggregate plot.
+	create_aggregate_plot(df)
+
+	# Compute gender and speaker plot.
 	for metric in METRICS:
 		print(f'------ Gender: {metric} ------')
 		perfect_perf = 1 if metric == 'BLEU' else 0
@@ -45,6 +48,31 @@ def main():
 		out_fqn = os.path.join('results', f'hist_speaker_{metric}.png')
 		create_dual_hist(metric, out_fqn, therapist, patient, rand_perf, perfect_perf, labels=['Therapist', 'Patient'])
 
+
+def create_aggregate_plot(df: pd.DataFrame):
+	"""
+	Creates the aggregate plot.
+	
+	Args:
+		df (pd.DataFrame): Pandas dataframe of the session-level stats.
+	"""
+	# For each hash, compute the metrics.
+	hashes = set(df['hash'])
+
+	values = {x: [] for x in METRICS}
+	for hash_ in hashes:
+		rows = df[df['hash'] == hash_]
+		for metric in values.keys():
+			values[metric].append(rows[metric].mean())
+	
+
+	for metric in METRICS:
+		data = np.asarray(values[metric])
+		perfect_perf = 1 if metric == 'BLEU' else 0
+		rand_perf = df[f'RAND_{metric}'].values.mean()
+		out_fqn = os.path.join('results', f'hist_aggregate_{metric}.png')
+		create_dual_hist(metric, out_fqn, data, data, rand_perf, perfect_perf, labels=['', ''])
+		print(out_fqn)
 
 
 def create_dual_hist(metric, out_fqn: str, arr1: np.ndarray, arr2: np.ndarray, rand_perf, perfect_perf, labels: List[str]):
@@ -99,12 +127,19 @@ def create_dual_hist(metric, out_fqn: str, arr1: np.ndarray, arr2: np.ndarray, r
 	axes[2].vlines(x=rand_perf, ymin=0, ymax=max(y1.max(), y2.max()) * .8, linestyles='dashed', color='k')
 
 	plt.savefig(out_fqn, bbox_inches='tight')
-	statistical_tests(arr1, arr2)
+	statistical_tests(out_fqn, arr1, arr2, labels)
 
 
-def statistical_tests(arr1: np.ndarray, arr2: np.ndarray):
-	"""Runs our suite of statistial test."""
-	out_fqn = 'qq.png'
+def statistical_tests(out_fqn: str, arr1: np.ndarray, arr2: np.ndarray, labels):
+	"""
+	Runs our suite of statistial tests and saves the Q-Q normality plot.
+
+	Args:
+		out_fqn (str): Histogram fqn. We will use the filename.
+		arr1: Array 1 for comparison.
+		arr2: Array 2 for comparison.
+	"""
+	qq_fqn = out_fqn.replace('hist_', 'qq_')
 	fig, axes = plt.subplots(
 		# figsize=(width, height)
 		nrows=1, ncols=2, figsize=(16, 7), sharex='col',
@@ -113,7 +148,9 @@ def statistical_tests(arr1: np.ndarray, arr2: np.ndarray):
 
 	# Compute t-test/p-values.
 	scipy.stats.probplot(arr1, plot=axes[0])
+	axes[0].set(title=labels[0])
 	scipy.stats.probplot(arr2, plot=axes[1])
+	axes[1].set(title=labels[1])
 	statistic1, pvalue1 = scipy.stats.shapiro(arr1)
 	statistic2, pvalue2 = scipy.stats.shapiro(arr2)
 	print(f'Shapiro-Wilk: Arr1: Statistic: {statistic1:.4f}\tP-Value: {pvalue1:.4f}')
@@ -121,8 +158,8 @@ def statistical_tests(arr1: np.ndarray, arr2: np.ndarray):
 
 	stat, pval = scipy.stats.mannwhitneyu(arr1, arr2)
 	print(f'Mann-Whitney: Statistic: {stat:.4f}\tP-Value: {pval:.4f}')
-	plt.savefig(out_fqn)
-	# print(out_fqn)
+	plt.savefig(qq_fqn, pad_inches=0, bbox_inches='tight')
+	print(qq_fqn)
 
 
 def fit_normal_line(arr: np.ndarray, n_bins: int, max_val) -> (np.ndarray, np.ndarray):
