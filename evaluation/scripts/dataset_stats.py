@@ -25,11 +25,35 @@ def main():
 	# Compute age.
 	average_age()
 
-	# Compute number of words.
-	# Load the paired file. We want ALL the data.
-	paired = evaluation.util.load_paired_json(skip_empty=True)
+	# Number of words and talking time.
+	num_words()
+	
 
-	pass
+def num_words():
+	"""
+	Computes the number of words spoken by the therapist vs the patient and
+	also computes the talking time (in minutes).
+	"""
+	# Load the GT.
+	df = pd.read_csv(config.META_FQN, sep='\t')
+	stats = {
+		'T': {'words': [], 'duration': []},
+		'P': {'words': [], 'duration': []},
+		'sess': {'duration': []}
+	}
+
+	for _, row in df.iterrows():
+		if row['asr_test']:
+			stats['P']['words'].append(float(row['gt_patient_num_words']))
+			stats['T']['words'].append(float(row['gt_therapist_num_words']))
+			stats['P']['duration'].append(float(row['gt_patient_time_spoken']))
+			stats['T']['duration'].append(float(row['gt_therapist_time_spoken']))
+			stats['sess']['duration'].append(float(row['sess_dur']))
+
+	for speaker in stats:
+		for metric in stats[speaker]:
+			print(f'------ {speaker} | {metric} ------')
+			print_stats(stats[speaker][metric])
 
 
 def average_age():
@@ -44,33 +68,8 @@ def average_age():
 			if not math.isnan(age):
 				ages.append(age)
 	
+	print('------ Age ------')
 	print_stats(ages)
-
-
-def audio_lengths():
-	"""
-	Computes the audio length, in terms of minutes.
-	"""
-	FLAC_DIR = '/vol0/psych_audio/jasa_format/v6/flac'
-	df = pd.read_csv(config.META_FQN, sep='\t')
-	hashes = []
-	for _, row in df.iterrows():
-		hash_ = row['hash']
-		if row['asr_test']:
-			hashes.append(hash_)
-	
-	# Load each audio file and compute length.
-	lens = []
-	for hash_ in tqdm(hashes, desc='Audio Length'):
-		fqn = os.path.join(FLAC_DIR, f'{hash_}.flac')
-		data, sr = sf.read(fqn)
-		seconds = len(data) / sr
-		minutes = seconds / 60
-		lens.append(minutes)
-	
-	lens = np.asarray(lens)
-	print('Duration')
-	print_stats(lens)
 
 
 def print_stats(arr: Union[np.ndarray, List]):
