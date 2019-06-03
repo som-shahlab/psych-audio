@@ -63,8 +63,7 @@ def main():
 	bleus = np.asarray(metrics['BLEU'])
 	wers = np.asarray(metrics['WER'])
 	print(f'n: {len(bleus)}')
-	print(f'WER:\t{wers.mean():.4f} +/- {wers.std():.4f}')
-	print(f'BLEU:\t{bleus.mean():.4f} +/- {bleus.std():.4f}')
+	print(f'WER:\t{wers.mean():.4f} +/- {wers.std():.4f} ({np.median(wers)} [{wers.min()}-{wers.max()}])')
 
 
 if __name__ == '__main__':
