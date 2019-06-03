@@ -39,7 +39,7 @@ def num_words():
 	stats = {
 		'T': {'words': [], 'duration': []},
 		'P': {'words': [], 'duration': []},
-		'sess': {'duration': []}
+		'sess': {'words': [], 'duration': []}
 	}
 
 	for _, row in df.iterrows():
@@ -49,6 +49,8 @@ def num_words():
 			stats['P']['duration'].append(float(row['gt_patient_time_spoken']))
 			stats['T']['duration'].append(float(row['gt_therapist_time_spoken']))
 			stats['sess']['duration'].append(float(row['sess_dur']))
+			n_words = row['gt_therapist_num_words'] + row['gt_patient_num_words']
+			stats['sess']['words'].append(n_words)
 
 	for speaker in stats:
 		for metric in stats[speaker]:
