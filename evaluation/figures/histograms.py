@@ -107,11 +107,15 @@ def create_dual_hist(metric, out_fqn: str, arr1: np.ndarray, arr2: np.ndarray, r
 	axes[0].set(ylabel='# Sessions')
 	axes[0].yaxis.set_major_formatter(FormatStrFormatter('%.0f'))
 	axes[0].legend()
+	counts0, _ = np.histogram(arr1, n_bins)
+	axes0_max = counts0.max()
 
 	axes[1].hist(arr2, n_bins, fc=LIGHTBLUE, label=labels[1])
 	axes[1].set(ylabel='# Sessions')
 	axes[1].yaxis.set_major_formatter(FormatStrFormatter('%.0f'))
 	axes[1].legend()
+	counts1, _ = np.histogram(arr2, n_bins)
+	axes1_max = counts1.max()
 
 	axes[2].plot(x1, y1, '-', c=DARKBLUE, linewidth=line_thickness)
 	axes[2].plot(x2, y2, '-', c=LIGHTBLUE, linewidth=line_thickness)
@@ -123,6 +127,10 @@ def create_dual_hist(metric, out_fqn: str, arr1: np.ndarray, arr2: np.ndarray, r
 		axes[2].set_xticklabels(['{:,.1f}'.format(x) for x in axes[2].get_xticks()])
 
 	# Add vertial lines/bounds.
+	axes[0].vlines(x=perfect_perf, ymin=0, ymax=axes0_max * .8, linestyles='dashed', color='k')
+	axes[0].vlines(x=rand_perf, ymin=0, ymax=axes0_max * .8, linestyles='dashed', color='k')
+	axes[1].vlines(x=perfect_perf, ymin=0, ymax=axes1_max * .8, linestyles='dashed', color='k')
+	axes[1].vlines(x=rand_perf, ymin=0, ymax=axes1_max * .8, linestyles='dashed', color='k')
 	axes[2].vlines(x=perfect_perf, ymin=0, ymax=max(y1.max(), y2.max()) * .8, linestyles='dashed', color='k')
 	axes[2].vlines(x=rand_perf, ymin=0, ymax=max(y1.max(), y2.max()) * .8, linestyles='dashed', color='k')
 
@@ -146,11 +154,17 @@ def statistical_tests(out_fqn: str, arr1: np.ndarray, arr2: np.ndarray, labels):
 		gridspec_kw={'width_ratios': [1, 1]}
 	)
 
-	# Compute t-test/p-values.
+	# Plot the Q-Q plot.
 	scipy.stats.probplot(arr1, plot=axes[0])
-	axes[0].set(title=labels[0])
 	scipy.stats.probplot(arr2, plot=axes[1])
+	axes[0].get_lines()[0].set_markerfacecolor('r')
+	axes[0].get_lines()[0].set_marker('o')
+	axes[0].get_lines()[0].set_markerfacecolor('C0')
+	axes[0].set(title=labels[0])
 	axes[1].set(title=labels[1])
+	axes[1].get_lines()[0].set_markerfacecolor(DARKBLUE)
+
+	# Compute t-test/p-values.
 	statistic1, pvalue1 = scipy.stats.shapiro(arr1)
 	statistic2, pvalue2 = scipy.stats.shapiro(arr2)
 	print(f'Shapiro-Wilk: Arr1: Statistic: {statistic1:.4f}\tP-Value: {pvalue1:.4f}')
