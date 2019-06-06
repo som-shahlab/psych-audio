@@ -7,6 +7,7 @@ import json
 import argparse
 import pandas as pd
 from typing import *
+from collections import Counter
 import preproc.util
 from evaluation.self_harm import config
 
@@ -104,8 +105,9 @@ def generate_paired(examples: List) -> Dict:
             continue
         
         # Get the canonicalized GT and machine's prediction.
-        gt, pred, confidences = get_paired_phrase(hash_, start_ts, end_ts)
-    
+        gt, pred, confidences, speaker = get_paired_phrase(hash_, start_ts, end_ts)
+        print(speaker)
+
         result[eid] = {
             'gt': gt,
             'pred': pred,
@@ -138,15 +140,18 @@ def get_paired_phrase(hash_: str, start_ts: float, end_ts: float) -> Dict:
     gt, pred = [], []
     confidences = []
 
+    speaker = ''
     gt_fqn = os.path.join(config.JASA_DIR, 'gt', f'{hash_}.json')
-    gt_items = get_words_between(gt_fqn, start_ts, end_ts)
+    gt_items, speaker = get_words_between(gt_fqn, start_ts, end_ts)
 
     pred_fqn = os.path.join(config.JASA_DIR, 'machine-video', f'{hash_}.json')
-    pred_items = get_words_between(pred_fqn, start_ts, end_ts, is_pred=True)
+    pred_items, _ = get_words_between(pred_fqn, start_ts, end_ts, is_pred=True)
 
     # Compose the final strings and confidence array.
+    speakers = []
     for item in gt_items:
         gt.append(item['word'])
+        speakers.append(item['speaker_tag'])
     for item in pred_items:
         pred.append(item['word'])
         confidences.append(item['conf'])
@@ -155,7 +160,7 @@ def get_paired_phrase(hash_: str, start_ts: float, end_ts: float) -> Dict:
     gt = ' '.join(gt)
     pred = ' '.join(pred)
 
-    return gt, pred, confidences
+    return gt, pred, confidences, speaker
 
 
 def get_words_between(json_fqn: str, start_ts, end_ts, is_pred=False):
@@ -178,13 +183,13 @@ def get_words_between(json_fqn: str, start_ts, end_ts, is_pred=False):
         start_ts (float): Start timestamp in seconds.
         end_ts (float): End timestamp in seconds.
     """
-    if is_pred:
-        start_ts -= 10
-        end_ts += 10
+    pad_start_ts = start_ts - 10 if is_pred else start_ts
+    pad_end_ts = end_ts + 10 if is_pred else end_ts
     with open(json_fqn, 'r') as f:
         A = json.load(f)
 
     words = []  # List of tuples, each tuple = word, confidence, speaker
+    speakers = Counter()
     # For each word, add it to our list.
     for B in A['results']:
         for C in B['alternatives']:
@@ -195,13 +200,16 @@ def get_words_between(json_fqn: str, start_ts, end_ts, is_pred=False):
                 # Get the core content.
                 ts = float(D['startTime'].replace('s', ''))
 
-                if ts < start_ts or ts > end_ts:
+                if ts < pad_start_ts or ts > pad_end_ts:
                     continue
 
                 item = {'word': preproc.util.canonicalize_word(D['word'])}
                 item['start_ts'] = ts
+                
                 if 'speakerTag' in D.keys():
                     item['speaker_tag'] = D['speakerTag']
+                    if not is_pred and ts >= start_ts and ts < end_ts:
+                        speakers[D['speakerTag']] += 1
                 if 'end_ts' in D.keys():
                     item['end_ts'] = D['end_ts']
                 if 'confidence' in D.keys():
@@ -209,7 +217,14 @@ def get_words_between(json_fqn: str, start_ts, end_ts, is_pred=False):
 
                 words.append(item)
 
-    return words
+    speaker = None
+    if not is_pred:
+        if sum(speakers.values()) == 0:
+            print(words)
+        else:
+            speaker = speakers.most_common(1)[0]
+
+    return words, speaker
 
 
 def get_start_end_ts(full_text: str, start: int, end: int) -> (float, float):
