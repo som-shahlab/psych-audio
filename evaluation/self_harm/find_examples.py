@@ -7,7 +7,9 @@ import sys
 import evaluation.util
 
 keywords = ['suicide', 'kill', 'death', 'dead', 'die', 'harm',
-			'depression', 'died', 'hurt', 'depressed']
+			'depression', 'died', 'hurt', 'depressed', 'energy', 'eat',
+			'eating', 'drowsy', 'sleepy', 'hopeless', 'miserable', 'mood',
+			'agitate', 'agitated', 'emotion']
 
 def main():
 	# Load the data.
@@ -15,8 +17,6 @@ def main():
 
 	# Find examples where a keyword appears in the GT or Pred, but not both.
 	for gid, v in paired.items():
-		if v['speaker'] != 'P':
-			continue
 		for keyword in keywords:
 			in_gt, in_pred = False, False
 			if keyword in v['gt'].split(' '):
@@ -24,7 +24,7 @@ def main():
 			if keyword in v['pred'].split(' '):
 				in_pred = True
 			
-			if in_gt or in_pred:  # XOR.
+			if in_gt ^ in_pred:  # XOR.
 				print('-' * 20, v['speaker'], gid, '-' * 20)
 				gt = v['gt'].replace(keyword, f'**{keyword.upper()}**')
 				pred = v['pred'].replace(keyword, f'**{keyword.upper()}**')
