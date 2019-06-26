@@ -5,6 +5,7 @@ import os
 import sys
 import nltk
 import argparse
+from typing import *
 import scipy.stats
 import numpy as np
 import pandas as pd
@@ -80,12 +81,45 @@ def main():
 
     print("All")
     evaluation.util.print_metrics(wers["All"])
+    N = len(wers["All"])
 
+    # Compare to randomly selected sentences from the corpus.
+    # Select random N paired examples from the corpus.
+    corpus_wers = get_random_corpus_wers(N)
+    print("Corpus WERs")
+    evaluation.util.print_metrics(corpus_wers)
+
+    print("Corpus vs Self-Harm")
     statistic, pval = scipy.stats.ttest_ind(
-        wers["T"], wers["P"], equal_var=False
+        wers["All"], corpus_wers, equal_var=False
     )
     print(f"t-Statistic: {statistic}")
     print(f"Two-Tailed P Value: {pval}")
+
+
+def get_random_corpus_wers(N: int):
+    """
+    Loads the paired.json file, selects N examples randomly, then computes WER.
+    
+    Args:
+        N (int): Number of sentences to select.
+    """
+    # Load the paired file.
+    paired = evaluation.util.load_paired_json(skip_empty=True)
+
+    # Select random examples.
+    keys = list(paired.keys())
+    ridxs = np.random.choice(len(keys), N, replace=False)
+
+    # Compute WERs.
+    wers = np.zeros((N,))
+    for i, ridx in enumerate(ridxs):
+        gid = keys[ridx]
+        pred = paired[gid]["pred"]
+        gt = paired[gid]["gt"]
+        wers[i] = evaluation.util.word_error_rate(pred, gt)
+
+    return wers
 
 
 if __name__ == "__main__":
