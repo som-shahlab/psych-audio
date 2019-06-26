@@ -11,6 +11,7 @@ from collections import Counter
 import preproc.util
 from evaluation.self_harm import config
 
+
 def main(args):
     # Load the annotations into a nice format.
     # `examples` is a list of tuples, where each tuple contains
@@ -26,51 +27,51 @@ def main(args):
         if gid < args.start:
             continue
         item = paired[gid]
-        print('-' * 80)
-        gt = preproc.util.canonicalize_sentence(item['phrase'])
-        pred = item['pred']
-        tokens = pred.split(' ')
+        print("-" * 80)
+        gt = preproc.util.canonicalize_sentence(item["phrase"])
+        pred = item["pred"]
+        tokens = pred.split(" ")
         for i, word in enumerate(tokens):
-            print(f'{i}\t{word}')
-        
-        print(f'GT ({gid}): {gt}')
-        start = input('Start index? ')
-        end = input('End index? ')
-        if start != '' and end != '':
+            print(f"{i}\t{word}")
+
+        print(f"GT ({gid}): {gt}")
+        start = input("Start index? ")
+        end = input("End index? ")
+        if start != "" and end != "":
             start = int(start)
             end = int(end)
-            subset_words = tokens[start:end+1]
-            subset_conf = item['conf'][start:end+1]
+            subset_words = tokens[start : end + 1]
+            subset_conf = item["conf"][start : end + 1]
         else:
-            subset_words = [' ']
+            subset_words = [" "]
             subset_conf = [1.0]
 
         # Create the pandas dataframe.
         df_gt = []
         df_pred = []
         df_conf = []
-        gt_words = gt.split(' ')
+        gt_words = gt.split(" ")
         N = max(len(subset_words), len(gt_words))
         for i in range(N):
             if i < len(gt_words):
                 clean = preproc.util.canonicalize_word(gt_words[i])
                 df_gt.append(clean)
             else:
-                df_gt.append('')
+                df_gt.append("")
 
             if i < len(subset_words):
                 df_pred.append(subset_words[i])
                 df_conf.append(subset_conf[i])
             else:
-                df_pred.append('')
+                df_pred.append("")
                 df_conf.append(1.0)
-            
-        df = pd.DataFrame(data={'gt': df_gt, 'pred': df_pred, 'conf': df_conf})
+
+        df = pd.DataFrame(data={"gt": df_gt, "pred": df_pred, "conf": df_conf})
         print(df)
 
         # Write to file.
-        out_fqn = os.path.join(config.OUT_DIR, f'{str(gid).zfill(3)}.tsv')
-        df.to_csv(out_fqn, sep='\t', index_label='wid')
+        out_fqn = os.path.join(config.OUT_DIR, f"{str(gid).zfill(3)}.tsv")
+        df.to_csv(out_fqn, sep="\t", index_label="wid")
         print(out_fqn)
 
 
@@ -94,8 +95,8 @@ def generate_paired(examples: List) -> Dict:
     for example in examples:
         hash_, start, end, phrase = example
         # For each example, load the gold TXT file.
-        txt_fqn = os.path.join(config.TXT_DIR, f'{hash_}.txt')
-        with open(txt_fqn, 'r') as f:
+        txt_fqn = os.path.join(config.TXT_DIR, f"{hash_}.txt")
+        with open(txt_fqn, "r") as f:
             data = f.read()
 
         # Get the start and end time for this example.
@@ -103,16 +104,18 @@ def generate_paired(examples: List) -> Dict:
 
         if start_ts == -1:
             continue
-        
+
         # Get the canonicalized GT and machine's prediction.
-        gt, pred, confidences, speaker = get_paired_phrase(hash_, start_ts, end_ts)
+        gt, pred, confidences, speaker = get_paired_phrase(
+            hash_, start_ts, end_ts
+        )
         print(speaker)
 
         result[eid] = {
-            'gt': gt,
-            'pred': pred,
-            'conf': confidences,
-            'phrase': phrase,
+            "gt": gt,
+            "pred": pred,
+            "conf": confidences,
+            "phrase": phrase,
         }
         eid += 1
 
@@ -140,25 +143,25 @@ def get_paired_phrase(hash_: str, start_ts: float, end_ts: float) -> Dict:
     gt, pred = [], []
     confidences = []
 
-    speaker = ''
-    gt_fqn = os.path.join(config.JASA_DIR, 'gt', f'{hash_}.json')
+    speaker = ""
+    gt_fqn = os.path.join(config.JASA_DIR, "gt", f"{hash_}.json")
     gt_items, speaker = get_words_between(gt_fqn, start_ts, end_ts)
 
-    pred_fqn = os.path.join(config.JASA_DIR, 'machine-video', f'{hash_}.json')
+    pred_fqn = os.path.join(config.JASA_DIR, "machine-video", f"{hash_}.json")
     pred_items, _ = get_words_between(pred_fqn, start_ts, end_ts, is_pred=True)
 
     # Compose the final strings and confidence array.
     speakers = []
     for item in gt_items:
-        gt.append(item['word'])
-        speakers.append(item['speaker_tag'])
+        gt.append(item["word"])
+        speakers.append(item["speaker_tag"])
     for item in pred_items:
-        pred.append(item['word'])
-        confidences.append(item['conf'])
+        pred.append(item["word"])
+        confidences.append(item["conf"])
 
     # Convert to string.
-    gt = ' '.join(gt)
-    pred = ' '.join(pred)
+    gt = " ".join(gt)
+    pred = " ".join(pred)
 
     return gt, pred, confidences, speaker
 
@@ -185,35 +188,35 @@ def get_words_between(json_fqn: str, start_ts, end_ts, is_pred=False):
     """
     pad_start_ts = start_ts - 10 if is_pred else start_ts
     pad_end_ts = end_ts + 10 if is_pred else end_ts
-    with open(json_fqn, 'r') as f:
+    with open(json_fqn, "r") as f:
         A = json.load(f)
 
     words = []  # List of tuples, each tuple = word, confidence, speaker
     speakers = Counter()
     # For each word, add it to our list.
-    for B in A['results']:
-        for C in B['alternatives']:
+    for B in A["results"]:
+        for C in B["alternatives"]:
             # Sometimes the 'words' key is not present.
-            if 'words' not in C:
+            if "words" not in C:
                 continue
-            for D in C['words']:
+            for D in C["words"]:
                 # Get the core content.
-                ts = float(D['startTime'].replace('s', ''))
+                ts = float(D["startTime"].replace("s", ""))
 
                 if ts < pad_start_ts or ts > pad_end_ts:
                     continue
 
-                item = {'word': preproc.util.canonicalize_word(D['word'])}
-                item['start_ts'] = ts
-                
-                if 'speakerTag' in D.keys():
-                    item['speaker_tag'] = D['speakerTag']
+                item = {"word": preproc.util.canonicalize_word(D["word"])}
+                item["start_ts"] = ts
+
+                if "speakerTag" in D.keys():
+                    item["speaker_tag"] = D["speakerTag"]
                     if not is_pred and ts >= start_ts and ts < end_ts:
-                        speakers[D['speakerTag']] += 1
-                if 'end_ts' in D.keys():
-                    item['end_ts'] = D['end_ts']
-                if 'confidence' in D.keys():
-                    item['conf'] = D['confidence']
+                        speakers[D["speakerTag"]] += 1
+                if "end_ts" in D.keys():
+                    item["end_ts"] = D["end_ts"]
+                if "confidence" in D.keys():
+                    item["conf"] = D["confidence"]
 
                 words.append(item)
 
@@ -244,15 +247,15 @@ def get_start_end_ts(full_text: str, start: int, end: int) -> (float, float):
         end_ts (float): Ending time in seconds.
     """
     # Find the start timestamp by finding the start and end of this line.
-    start_of_line = full_text[:end].rfind('\n') + 1
+    start_of_line = full_text[:end].rfind("\n") + 1
     end_of_line = -1
     for i in range(end, len(full_text)):
         if ord(full_text[i]) == 10:
             end_of_line = i
             break
-    
-    result = full_text[start_of_line: end_of_line]
-    start_ts_string = result[result.find('['):result.find(']')+1]
+
+    result = full_text[start_of_line:end_of_line]
+    start_ts_string = result[result.find("[") : result.find("]") + 1]
     start_min, start_sec = preproc.util.get_mmss_from_time(start_ts_string)
     start_ts = float(start_min * 60 + start_sec)
 
@@ -265,17 +268,17 @@ def get_start_end_ts(full_text: str, start: int, end: int) -> (float, float):
         W = 4
         # Find the location of TIME.
         for i in range(end_of_line, len(full_text) - W):
-            window = full_text[i:i+W]
-            if window == 'TIME':
+            window = full_text[i : i + W]
+            if window == "TIME":
                 pointer = i
                 break
 
         # Find the precise location of the brackets.
-        context = full_text[pointer-1:pointer+13]
-        bracket1 = context.find('[')
-        bracket2 = context.find(']')
+        context = full_text[pointer - 1 : pointer + 13]
+        bracket1 = context.find("[")
+        bracket2 = context.find("]")
 
-        end_time_str = context[bracket1:bracket2+1]
+        end_time_str = context[bracket1 : bracket2 + 1]
     else:
         # Get the first result (need to reverse it).
         end_time_str, _ = subphrase[-1]
@@ -290,20 +293,25 @@ def load_annotations() -> List[Tuple]:
     """
     Loads the annotation file.
     """
-    df = pd.read_csv(config.LABEL_FILE, sep='\t', header=None,
-                     names=['filename', 'offset', 'phrase'])
+    df = pd.read_csv(
+        config.LABEL_FILE,
+        sep="\t",
+        header=None,
+        names=["filename", "offset", "phrase"],
+    )
     examples = []
     # Parse each column.
     for _, row in df.iterrows():
-        hash_ = row['filename'][:row['filename'].find('.ann:')]
-        start, end = row['offset'].replace('Important ', '').split(' ')
+        hash_ = row["filename"][: row["filename"].find(".ann:")]
+        start, end = row["offset"].replace("Important ", "").split(" ")
         start, end = int(start), int(end)
-        examples.append((hash_, start, end, row['phrase']))
+        examples.append((hash_, start, end, row["phrase"]))
     return examples
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--start', default=1, type=int,
-        help='Example to start from.')
+    parser.add_argument(
+        "--start", default=1, type=int, help="Example to start from."
+    )
     main(parser.parse_args())
