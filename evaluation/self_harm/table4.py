@@ -5,27 +5,45 @@ import os
 import sys
 import nltk
 import argparse
+import scipy.stats
 import numpy as np
 import pandas as pd
 import preproc.util
 import evaluation.util
 from evaluation.self_harm import config
+import evaluation.embeddings.util as eeu
 
 
 def main():
+    # Load the W2V model.
+    # print(f"Loading the model..")
+    # model, keys = eeu.load_embedding_model("word2vec")
+
+    # Load the EID -> speaker file.
+    eid2speaker = {}
+    with open(config.SPEAKER_FILE, "r") as f:
+        lines = f.readlines()
+        for line in lines:
+            eid, speaker = line.strip().split(" ")
+            eid2speaker[int(eid)] = speaker
+
     # Load the cropped files.
     filenames = os.listdir(config.OUT_DIR)
 
-    metrics = {"BLEU": [], "WER": []}
+    # Compute metrics for patient vs therapist.
+    wers = {"T": [], "P": [], "All": []}
+    emds = {"T": [], "P": [], "All": []}
     for filename in filenames:
         fqn = os.path.join(config.OUT_DIR, filename)
         df = pd.read_csv(fqn, sep="\t")
+        eid = int(filename[:3])
+        speaker = eid2speaker[eid]
 
         # Compose the GT and pred sentences.
         gt = []
         pred = []
         conf = []
-        for i, row in df.iterrows():
+        for _, row in df.iterrows():
             gt_word = row["gt"]
             pred_word = row["pred"]
 
@@ -41,29 +59,33 @@ def main():
 
         gt = " ".join(gt)
         pred = " ".join(pred)
-        bleu = nltk.translate.bleu_score.sentence_bleu([gt], pred)
+
+        # Compute WER.
         wer = evaluation.util.word_error_rate(pred, gt)
+        wers[speaker].append(wer)
+        wers["All"].append(wer)
 
-        print("-" * 80)
-        print(f"GT:\t{gt}")
-        print(f"Pred:\t{pred}")
-        conf_str = ""
-        for x in conf:
-            conf_str += f" {x:.2f}"
-        print(conf_str.strip())
-        print(f"WER: {wer:.4f}")
-        print(f"BLEU: {bleu:.4f}")
+        # Compute EMD.
+        # embeddings = eeu.batch_encode("word2vec", model, keys, [gt, pred])
+        # print(embeddings)
 
-        metrics["WER"].append(wer)
-        metrics["BLEU"].append(bleu)
+    for k, v in wers.items():
+        wers[k] = np.asarray(v)
 
-    print("------ FINAL METRICS ------")
-    bleus = np.asarray(metrics["BLEU"])
-    wers = np.asarray(metrics["WER"])
-    print(f"n: {len(bleus)}")
-    print(
-        f"WER:\t{wers.mean():.4f} +/- {wers.std():.4f} ({np.median(wers)} [{wers.min()}-{wers.max()}])"
+    print("Therapist")
+    evaluation.util.print_metrics(wers["T"])
+
+    print("Patient")
+    evaluation.util.print_metrics(wers["P"])
+
+    print("All")
+    evaluation.util.print_metrics(wers["All"])
+
+    statistic, pval = scipy.stats.ttest_ind(
+        wers["T"], wers["P"], equal_var=False
     )
+    print(f"t-Statistic: {statistic}")
+    print(f"Two-Tailed P Value: {pval}")
 
 
 if __name__ == "__main__":

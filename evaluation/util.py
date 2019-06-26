@@ -2,6 +2,7 @@
 Utility functions for evaluation.
 """
 import json
+import numpy as np
 import unidecode
 import Levenshtein
 from typing import *
@@ -67,3 +68,23 @@ def word_error_rate(pred: List[str], target: List[str]) -> float:
     wer = d / max(len(target), 1)
     wer = min(wer, 1.0)
     return wer
+
+
+def print_metrics(arr: np.ndarray):
+    """
+    Prints the mean, standard deviation, median and range of an array.
+    
+    Args:
+        arr (np.ndarray): Array of data.
+    """
+    assert isinstance(arr, np.ndarray)
+    assert arr.ndim == 1
+    mean = arr.mean()
+    median = np.median(arr)
+    std = arr.std()
+    min_ = arr.min()
+    max_ = arr.max()
+    N = len(arr)
+    result1 = f"average (SD) of {mean:.3f} ({std:.3f}) with"
+    result2 = f" (median [range], {median:.3f} [{min_:.3f}-{max_:.3f}]; n={N})"
+    print(result1 + result2)

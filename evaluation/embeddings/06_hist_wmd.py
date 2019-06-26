@@ -32,11 +32,11 @@ def main(args):
     model = api.load("word2vec-google-news-300")
 
     print("Computing random dists...")
-    random_dists = pairwise_wmd(model, random_sentences)
+    random_dists = eeu.pairwise_wmd(model, random_sentences)
     eeu.print_metrics(random_dists, "WMD-random")
 
     print(f"Computing corpus dists...")
-    corpus_dists = pairwise_wmd(model, corpus_sentences)
+    corpus_dists = eeu.pairwise_wmd(model, corpus_sentences)
     eeu.print_metrics(corpus_dists, "WMD-corpus")
 
     print("--------- Unequal Variance --------")
@@ -51,35 +51,6 @@ def main(args):
 
     out_fqn = os.path.join(args.output_dir, "wmd.png")
     eeu.plot_histogram(out_fqn, random_dists, corpus_dists)
-
-
-def pairwise_wmd(model, sentences: List[str]) -> np.ndarray:
-    """
-	Computes pairwise Word Mover Distance (WMD) for a list of strings.
-	
-	Args:
-		model: Gensim model.
-		sentences (List[str]): List of sentences.
-	
-	Returns:
-		dists: Numpy array of WMD distances.
-	"""
-    # WMD requires each sentence as a List of words.
-    sentences = [x.split() for x in sentences]
-    dists: List[float] = []
-    n = len(sentences)
-    n_dists = int((n ** 2 - n) / 2)
-    pbar = tqdm(total=n_dists)
-    for i in range(n):
-        for j in range(i + 1, n):
-            pbar.update(1)
-            d = model.wmdistance(sentences[i], sentences[j])
-            if math.isnan(d) or d <= 0 or math.isinf(d):
-                continue
-            dists.append(d)
-    pbar.close()
-    dists = np.asarray(dists)
-    return dists
 
 
 if __name__ == "__main__":

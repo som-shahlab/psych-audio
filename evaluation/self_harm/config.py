@@ -9,3 +9,6 @@ JASA_DIR = "/vol0/psych_audio/jasa_format/v6"
 
 # Output directory to store the TSV files.
 OUT_DIR = "/vol0/psych_audio/ahaque/self_harm"
+
+# Self harm event ID to speaker mapping.
+SPEAKER_FILE = "/vol0/psych_audio/ahaque/self_harm_speakers.txt"

@@ -4,6 +4,7 @@ Contains various util functions for loading and computing embeddings.
 import math
 import gensim
 import numpy as np
+from tqdm import tqdm
 from typing import *
 import scipy.spatial.distance
 import matplotlib.pyplot as plt
@@ -267,3 +268,32 @@ def pairwise_metric(A: np.ndarray, metric: str):
             clean.append(val)
     clean = np.asarray(clean)
     return clean
+
+
+def pairwise_wmd(model, sentences: List[str]) -> np.ndarray:
+    """
+	Computes pairwise Word Mover Distance (WMD) for a list of strings.
+	
+	Args:
+		model: Gensim model.
+		sentences (List[str]): List of sentences.
+	
+	Returns:
+		dists: Numpy array of WMD distances.
+	"""
+    # WMD requires each sentence as a List of words.
+    sentences = [x.split() for x in sentences]
+    dists: List[float] = []
+    n = len(sentences)
+    n_dists = int((n ** 2 - n) / 2)
+    pbar = tqdm(total=n_dists)
+    for i in range(n):
+        for j in range(i + 1, n):
+            pbar.update(1)
+            d = model.wmdistance(sentences[i], sentences[j])
+            if math.isnan(d) or d <= 0 or math.isinf(d):
+                continue
+            dists.append(d)
+    pbar.close()
+    dists = np.asarray(dists)
+    return dists
