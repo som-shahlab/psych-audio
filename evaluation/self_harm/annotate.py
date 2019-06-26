@@ -20,6 +20,7 @@ def main(args):
 
     # Generate paired sentences.
     paired = generate_paired(examples)
+    sys.exit(0)
 
     # For each example, ask the user to select the start and end word
     # from the predicted text.
@@ -100,22 +101,22 @@ def generate_paired(examples: List) -> Dict:
             data = f.read()
 
         # Get the start and end time for this example.
-        start_ts, end_ts = get_start_end_ts(data, start, end)
+        start_ts, end_ts, speaker = get_start_end_ts(data, start, end)
 
         if start_ts == -1:
             continue
 
         # Get the canonicalized GT and machine's prediction.
-        gt, pred, confidences, speaker = get_paired_phrase(
-            hash_, start_ts, end_ts
-        )
-        print(speaker)
+        gt, pred, confidences = get_paired_phrase(hash_, start_ts, end_ts)
+
+        print(eid, speaker)
 
         result[eid] = {
             "gt": gt,
             "pred": pred,
             "conf": confidences,
             "phrase": phrase,
+            "speaker": speaker,
         }
         eid += 1
 
@@ -145,16 +146,14 @@ def get_paired_phrase(hash_: str, start_ts: float, end_ts: float) -> Dict:
 
     speaker = ""
     gt_fqn = os.path.join(config.JASA_DIR, "gt", f"{hash_}.json")
-    gt_items, speaker = get_words_between(gt_fqn, start_ts, end_ts)
+    gt_items = get_words_between(gt_fqn, start_ts, end_ts)
 
     pred_fqn = os.path.join(config.JASA_DIR, "machine-video", f"{hash_}.json")
-    pred_items, _ = get_words_between(pred_fqn, start_ts, end_ts, is_pred=True)
+    pred_items = get_words_between(pred_fqn, start_ts, end_ts, is_pred=True)
 
     # Compose the final strings and confidence array.
-    speakers = []
     for item in gt_items:
         gt.append(item["word"])
-        speakers.append(item["speaker_tag"])
     for item in pred_items:
         pred.append(item["word"])
         confidences.append(item["conf"])
@@ -163,7 +162,7 @@ def get_paired_phrase(hash_: str, start_ts: float, end_ts: float) -> Dict:
     gt = " ".join(gt)
     pred = " ".join(pred)
 
-    return gt, pred, confidences, speaker
+    return gt, pred, confidences
 
 
 def get_words_between(json_fqn: str, start_ts, end_ts, is_pred=False):
@@ -192,7 +191,6 @@ def get_words_between(json_fqn: str, start_ts, end_ts, is_pred=False):
         A = json.load(f)
 
     words = []  # List of tuples, each tuple = word, confidence, speaker
-    speakers = Counter()
     # For each word, add it to our list.
     for B in A["results"]:
         for C in B["alternatives"]:
@@ -209,10 +207,6 @@ def get_words_between(json_fqn: str, start_ts, end_ts, is_pred=False):
                 item = {"word": preproc.util.canonicalize_word(D["word"])}
                 item["start_ts"] = ts
 
-                if "speakerTag" in D.keys():
-                    item["speaker_tag"] = D["speakerTag"]
-                    if not is_pred and ts >= start_ts and ts < end_ts:
-                        speakers[D["speakerTag"]] += 1
                 if "end_ts" in D.keys():
                     item["end_ts"] = D["end_ts"]
                 if "confidence" in D.keys():
@@ -220,14 +214,7 @@ def get_words_between(json_fqn: str, start_ts, end_ts, is_pred=False):
 
                 words.append(item)
 
-    speaker = None
-    if not is_pred:
-        if sum(speakers.values()) == 0:
-            print(words)
-        else:
-            speaker = speakers.most_common(1)[0]
-
-    return words, speaker
+    return words
 
 
 def get_start_end_ts(full_text: str, start: int, end: int) -> (float, float):
@@ -255,6 +242,7 @@ def get_start_end_ts(full_text: str, start: int, end: int) -> (float, float):
             break
 
     result = full_text[start_of_line:end_of_line]
+    speaker = result[0]
     start_ts_string = result[result.find("[") : result.find("]") + 1]
     start_min, start_sec = preproc.util.get_mmss_from_time(start_ts_string)
     start_ts = float(start_min * 60 + start_sec)
@@ -286,7 +274,7 @@ def get_start_end_ts(full_text: str, start: int, end: int) -> (float, float):
     end_min, end_sec = preproc.util.get_mmss_from_time(end_time_str)
     end_ts = float(end_min * 60 + end_sec)
 
-    return start_ts, end_ts
+    return start_ts, end_ts, speaker
 
 
 def load_annotations() -> List[Tuple]:
