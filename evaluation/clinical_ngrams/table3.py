@@ -14,95 +14,97 @@ from collections import Counter
 import evaluation.util
 from evaluation import config
 
-SPEAKERS = ['T', 'P']
-OUTCOMES = ['TP', 'FP', 'FN', 'TN']
+SPEAKERS = ["T", "P"]
+OUTCOMES = ["TP", "FP", "FN", "TN"]
 
 
 def main(args):
-	if not os.path.exists(config.META_FQN):
-		print(f'File does not exist: {config.META_FQN}')
-		sys.exit(1)
+    if not os.path.exists(config.META_FQN):
+        print(f"File does not exist: {config.META_FQN}")
+        sys.exit(1)
 
-	# Load the paired file. We want ALL the data.
-	paired = evaluation.util.load_paired_json(skip_empty=False)
+    # Load the paired file. We want ALL the data.
+    paired = evaluation.util.load_paired_json(skip_empty=False)
 
-	# Load the term file.
-	term2phq = load_terms()
+    # Load the term file.
+    term2phq = load_terms()
 
-	# Results counter.
-	counts = {term: {key: 0 for key in OUTCOMES} for term in term2phq}
+    # Results counter.
+    counts = {term: {key: 0 for key in OUTCOMES} for term in term2phq}
 
-	# For each segment, compute TP, TN, etc. for each term.
-	i = 0
-	gid_keys = list(paired.keys())
-	for gid in tqdm(gid_keys, desc='Computing Metrics'):
-		# Get the data.
-		i+=1
-		hash_ = paired[gid]['hash']
-		gt = paired[gid]['gt']
-		pred = paired[gid]['pred']
-		speaker = paired[gid]['speaker']
+    # For each segment, compute TP, TN, etc. for each term.
+    i = 0
+    gid_keys = list(paired.keys())
+    for gid in tqdm(gid_keys, desc="Computing Metrics"):
+        # Get the data.
+        i += 1
+        hash_ = paired[gid]["hash"]
+        gt = paired[gid]["gt"]
+        pred = paired[gid]["pred"]
+        speaker = paired[gid]["speaker"]
 
-		# Only comptue results for the patient.
-		if speaker != 'P':
-			continue
+        # Only comptue results for the patient.
+        if speaker != "P":
+            continue
 
-		# Skip blank sentences.
-		if len(gt) == 0 and len(pred) == 0:
-			continue
+        # Skip blank sentences.
+        if len(gt) == 0 and len(pred) == 0:
+            continue
 
-		# For each term, count how many times it appears in this sentence.
-		for term in term2phq:
-			n_words = len(term.replace('-', '').split(' '))
-			n_ngrams = max(len(gt.split(' ')) + 1 - n_words, 0)
+        # For each term, count how many times it appears in this sentence.
+        for term in term2phq:
+            n_words = len(term.replace("-", "").split(" "))
+            n_ngrams = max(len(gt.split(" ")) + 1 - n_words, 0)
 
-			n_gt = sum(1 for _ in re.finditer(r'\b%s\b' % re.escape(term), gt))
-			n_pred = sum(1 for _ in re.finditer(r'\b%s\b' % re.escape(term), pred))
+            n_gt = sum(1 for _ in re.finditer(r"\b%s\b" % re.escape(term), gt))
+            n_pred = sum(
+                1 for _ in re.finditer(r"\b%s\b" % re.escape(term), pred)
+            )
 
-			# Count TP/TN/FP/FN.
-			tp = min(n_gt, n_pred)
-			fp, fn = 0, 0
-			if n_gt > n_pred:
-				fn = n_gt - tp
-			elif n_gt < n_pred:
-				fp = n_pred - tp
-			tn = n_ngrams - tp - fn - fp
+            # Count TP/TN/FP/FN.
+            tp = min(n_gt, n_pred)
+            fp, fn = 0, 0
+            if n_gt > n_pred:
+                fn = n_gt - tp
+            elif n_gt < n_pred:
+                fp = n_pred - tp
+            tn = n_ngrams - tp - fn - fp
 
-			counts[term]['TP'] += tp
-			counts[term]['FN'] += fn
-			counts[term]['FP'] += fp
-			counts[term]['TN'] += tn
+            counts[term]["TP"] += tp
+            counts[term]["FN"] += fn
+            counts[term]["FP"] += fp
+            counts[term]["TN"] += tn
 
-	# Write to file.
-	out_fqn = 'table3.tsv'
-	with open(out_fqn, 'w') as f:
-		f.write(f'phq\tterm\ttp\tfn\tfp\ttn\n')
-		for term in counts:
-			phq = term2phq[term]
-			tp = counts[term]['TP']
-			fn = counts[term]['FN']
-			fp = counts[term]['FP']
-			tn = counts[term]['TN']
-			f.write(f'{phq}\t{term}\t{tp}\t{fn}\t{fp}\t{tn}\n')
-	print(out_fqn)
+    # Write to file.
+    out_fqn = "table3.tsv"
+    with open(out_fqn, "w") as f:
+        f.write(f"phq\tterm\ttp\tfn\tfp\ttn\n")
+        for term in counts:
+            phq = term2phq[term]
+            tp = counts[term]["TP"]
+            fn = counts[term]["FN"]
+            fp = counts[term]["FP"]
+            tn = counts[term]["TN"]
+            f.write(f"{phq}\t{term}\t{tp}\t{fn}\t{fp}\t{tn}\n")
+    print(out_fqn)
 
 
 def load_terms() -> Dict[str, int]:
-	"""
+    """
 	Loads the PHQ term file.
 
 	Returns:
 		term2phq: Dictionary with key=term and value=PHQ number.
 	"""
-	df = pd.read_csv(config.PHQ_TERM_FQN, sep='\t')
-	term2phq: Dict[str, int] = {}
-	for _, row in df.iterrows():
-		term = row['TERM']
-		phq = row['PHQ']
-		term2phq[term] = phq
-	return term2phq
-	
+    df = pd.read_csv(config.PHQ_TERM_FQN, sep="\t")
+    term2phq: Dict[str, int] = {}
+    for _, row in df.iterrows():
+        term = row["TERM"]
+        phq = row["PHQ"]
+        term2phq[term] = phq
+    return term2phq
 
-if __name__ == '__main__':
-	parser = argparse.ArgumentParser()
-	main(parser.parse_args())
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    main(parser.parse_args())

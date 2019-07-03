@@ -38,31 +38,33 @@ import preproc.config
 def main(args: argparse.Namespace):
     """Handles high-level filename collection, directory creation, and thread management."""
     # Create the output directory, if it does not exist.
-    print('Creating the output directory...')
+    print("Creating the output directory...")
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
     else:
-        print('Output directory already exists.')
+        print("Output directory already exists.")
 
     # Recursively get list of all audio filenames and their desired output filename.
     workload = []
-    print('Gathering input filenames...')
+    print("Gathering input filenames...")
     for path, _, filenames in os.walk(preproc.config.raw_audio_dir):
         for filename in filenames:
             # Get the base filename without the audio extension.
-            basename = '.'.join(filename.split('.')[:-1])
-            source_fqn = os.path.join(preproc.config.raw_audio_dir, path, filename)  # fqn: Fully-qualified name.
-            dest_fqn = os.path.join(args.output_dir, f'{basename}.flac')
+            basename = ".".join(filename.split(".")[:-1])
+            source_fqn = os.path.join(
+                preproc.config.raw_audio_dir, path, filename
+            )  # fqn: Fully-qualified name.
+            dest_fqn = os.path.join(args.output_dir, f"{basename}.flac")
             # If we're continuing an interrupted job, we should skip any completed files.
             if args.resume:
                 if os.path.exists(dest_fqn):
                     continue
             workload.append((source_fqn, dest_fqn))
 
-    print(f'Found {len(workload)} files.')
+    print(f"Found {len(workload)} files.")
 
     # Create multiple threads.
-    print(f'Starting {args.n_threads} threads...')
+    print(f"Starting {args.n_threads} threads...")
     with multiprocessing.Pool(args.n_threads) as pool:
         pool.map(worker, workload)
 
@@ -79,20 +81,32 @@ def worker(item: Tuple[str, str]):
     # -i = input, -c:a = audio codec, -ac = # output channels, -ar = output sampling rate
     # Note that Google recommends 16,000 Hz. This is because their models are trained on 16,000.
     # Anything higher (e.g. 44kHz) significantly increases the filesize without any performance gains.
-    cmd_template = string.Template(f'{preproc.config.ffmpeg} -i \"$source\" -c:a flac -ac 1 -ar 16000 \"$dest\"')
+    cmd_template = string.Template(
+        f'{preproc.config.ffmpeg} -i "$source" -c:a flac -ac 1 -ar 16000 "$dest"'
+    )
     cmd = cmd_template.substitute(source=source_fqn, dest=dest_fqn)
 
     # Execute on command line.
     subprocess.run(cmd, shell=True)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('output_dir', type=str,
-                        help='Location where to place the new flac files.')
-    parser.add_argument('--n_threads', default=1, type=int,
-                        help='Number of simultaneous FFmpeg calls. Note, all available threads are always used.')
-    parser.add_argument('--resume', action='store_true',
-                        help='If True, skip files already completed. Useful for resuming an interrupted job.')
+    parser.add_argument(
+        "output_dir",
+        type=str,
+        help="Location where to place the new flac files.",
+    )
+    parser.add_argument(
+        "--n_threads",
+        default=1,
+        type=int,
+        help="Number of simultaneous FFmpeg calls. Note, all available threads are always used.",
+    )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="If True, skip files already completed. Useful for resuming an interrupted job.",
+    )
     args = parser.parse_args()
     main(args)
