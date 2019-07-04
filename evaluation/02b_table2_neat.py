@@ -57,17 +57,43 @@ def analyze_speakers(df: pd.DataFrame):
         print(f"------------ Speakers: {metric} ------------")
         patient = []
         therapist = []
+        random_p = []
+        random_t = []
         for _, row in df.iterrows():
             speaker = row["speaker"]
             if speaker == "P":
                 patient.append(row[metric])
+                random_p.append(row[f"RAND_{metric}"])
             elif speaker == "T":
                 therapist.append(row[metric])
+                random_t.append(row[f"RAND_{metric}"])
+
+        print(f"ASR {metric}")
+        print(f"\tPatient: {mean_std_string(patient)}")
+        print(f"\tTherapist: {mean_std_string(therapist)}")
+
+        print(f"Random {metric}")
+        print(f"\tPatient: {mean_std_string(random_p)}")
+        print(f"\tTherapist: {mean_std_string(random_t)}")
 
         patient = np.asarray(patient)
         therapist = np.asarray(therapist)
 
         difference_test(["P", "T"], patient, therapist)
+
+
+def mean_std_string(arr: Union[List, np.ndarray]) -> str:
+    """
+    Given an array of numbers, computes the mean and std and returns
+    a string in the format mean ± std.
+    
+    Args:
+        arr (Union[List, np.ndarray]): List of numbers.
+    Returns:
+        result (str): Mean and std in format `mean ± std`.
+    """
+    arr = np.asarray(arr)
+    return f"{arr.mean():.2f} ± {arr.std():.2f}"
 
 
 def analyze_genders(df: pd.DataFrame):
@@ -77,7 +103,34 @@ def analyze_genders(df: pd.DataFrame):
     Args:
         df (pd.DataFrame): Raw table 2 data.
     """
-    raise NotImplementedError
+    for metric in ["WER", "EMD"]:
+        print(f"------------ Genders: {metric} ------------")
+        male = []
+        female = []
+        random_male = []
+        random_female = []
+        for _, row in df.iterrows():
+            if row["speaker"] == "P":
+                gender = row["gender"]
+                if gender == "Male":
+                    male.append(row[metric])
+                    random_male.append(row[f"RAND_{metric}"])
+                elif gender == "Female":
+                    female.append(row[metric])
+                    random_female.append(row[f"RAND_{metric}"])
+
+        print(f"ASR {metric}")
+        print(f"\tMale: {mean_std_string(male)}")
+        print(f"\tFeale: {mean_std_string(female)}")
+
+        print(f"Random {metric}")
+        print(f"\tMale: {mean_std_string(random_male)}")
+        print(f"\tFeale: {mean_std_string(random_female)}")
+
+        male = np.asarray(male)
+        female = np.asarray(female)
+
+        difference_test(["M", "F"], male, female)
 
 
 def difference_test(labels: List, arr0: np.ndarray, arr1: np.ndarray) -> Dict:
