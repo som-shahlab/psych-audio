@@ -19,7 +19,10 @@ META_FQN = "/vol0/psych_audio/scotty/results/scotty_phq9_diffs_with_paths.tsv"
 PAIRED_FQN = "/vol0/psych_audio/ahaque/psych-audio/results/paired7.json"
 
 # Path to the paired.json corpus and predictions file.
-TABLE2_FQN = "/vol0/psych_audio/ahaque/psych-audio/results/table2_raw.tsv"
+TABLE2_FQN = "/vol0/psych_audio/ahaque/psych-audio/results/table2.tsv"
+
+# Path to the table 3 intermediate file.
+TABLE3_FQN = "/vol0/psych_audio/ahaque/psych-audio/results/table3.tsv"
 
 # Path to the PHQ term file.
 PHQ_TERM_FQN = "/vol0/psych_audio/ahaque/psych-audio/data/clinical-terms-v3.tsv"

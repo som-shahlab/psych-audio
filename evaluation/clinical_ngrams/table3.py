@@ -15,7 +15,7 @@ import evaluation.util
 from evaluation import config
 
 SPEAKERS = ["T", "P"]
-OUTCOMES = ["TP", "FP", "FN", "TN"]
+OUTCOMES = ["TP", "FP", "FN", "TN", "P"]
 
 
 def main(args):
@@ -70,6 +70,7 @@ def main(args):
                 fp = n_pred - tp
             tn = n_ngrams - tp - fn - fp
 
+            counts[term]["P"] += tp + fn
             counts[term]["TP"] += tp
             counts[term]["FN"] += fn
             counts[term]["FP"] += fp
@@ -77,15 +78,26 @@ def main(args):
 
     # Write to file.
     with open(evaluation.config.TABLE3_FQN, "w") as f:
-        f.write(f"phq\tterm\ttp\tfn\tfp\ttn\n")
+        f.write(f"phq\tterm\tpos\ttp\tfn\tfp\ttn\n")
         for term in counts:
             phq = term2phq[term]
+            pos = counts[term]["P"]
             tp = counts[term]["TP"]
             fn = counts[term]["FN"]
             fp = counts[term]["FP"]
             tn = counts[term]["TN"]
-            f.write(f"{phq}\t{term}\t{tp}\t{fn}\t{fp}\t{tn}\n")
+            f.write(f"{phq}\t{term}\t{pos}\t{tp}\t{fn}\t{fp}\t{tn}\n")
     print(evaluation.config.TABLE3_FQN)
+
+    # Print terms with # pos > 0.
+    phq2term = {x: [] for x in range(1, 10)}
+    for term in term2phq:
+        if counts[term] > 0:
+            phq = term2phq[term]
+            phq2term[phq].append(term)
+    for phq in phq2term:
+        keywords = sorted(phq2term[phq])
+        print(phq, ", ".join(keywords))
 
 
 def load_terms() -> Dict[str, int]:
