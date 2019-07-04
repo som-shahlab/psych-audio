@@ -44,6 +44,8 @@ def compute_aggregate(df: pd.DataFrame):
             f"average (SD) of {mean:.2f} ({std:.2f}) units (median"
             + f" [range]; {median:.2f} [{min_:.2f}-{max_:.2f}])"
         )
+        stat, pval = scipy.stats.shapiro(vals)
+        print(f"Shapiro-Wilk W={stat:.4f}\tP={pval:.3e}")
 
 
 def analyze_speakers(df: pd.DataFrame):
@@ -125,7 +127,7 @@ def analyze_genders(df: pd.DataFrame):
 
         print(f"Random {metric}")
         print(f"\tMale: {mean_std_string(random_male)}")
-        print(f"\tFeale: {mean_std_string(random_female)}")
+        print(f"\tFemale: {mean_std_string(random_female)}")
 
         male = np.asarray(male)
         female = np.asarray(female)
