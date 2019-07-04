@@ -92,7 +92,7 @@ def main(args):
     # Print terms with # pos > 0.
     phq2term = {x: [] for x in range(1, 10)}
     for term in term2phq:
-        if counts[term] > 0:
+        if counts[term]["P"] > 0:
             phq = term2phq[term]
             phq2term[phq].append(term)
     for phq in phq2term:
