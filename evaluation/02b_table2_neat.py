@@ -4,6 +4,7 @@ for both WER and EMD.
 """
 import os
 import sys
+import scipy.stats
 import numpy as np
 import pandas as pd
 from typing import *
@@ -14,11 +15,35 @@ def main():
     # df = pd.read_csv(evaluation.config.TABLE2_FQN, sep="\t")
     df = pd.read_csv("table2.tsv", sep="\t")
 
+    # Compute aggregate.
+    compute_aggregate(df)
+
     # Compute therapist vs patient stats.
     analyze_speakers(df)
 
     # Compute male vs female stats.
     analyze_genders(df)
+
+
+def compute_aggregate(df: pd.DataFrame):
+    """
+    Computes aggregate-level metrics.
+    
+    Args:
+        df (pd.DataFrame): Raw table 2 data.
+    """
+    for metric in ["WER", "RAND_WER", "EMD", "RAND_EMD"]:
+        vals = df[metric]
+        mean = vals.mean()
+        std = vals.std()
+        median = np.median(vals)
+        min_ = np.min(vals)
+        max_ = np.max(vals)
+        print(f"----------- {metric} -----------")
+        print(
+            f"average (SD) of {mean:.2f} ({std:.2f}) units (median"
+            + f" [range]; {median:.2f} [{min_:.2f}-{max_:.2f}])"
+        )
 
 
 def analyze_speakers(df: pd.DataFrame):
@@ -29,6 +54,7 @@ def analyze_speakers(df: pd.DataFrame):
         df (pd.DataFrame): Raw table 2 data.
     """
     for metric in ["WER", "EMD"]:
+        print(f"------------ Speakers: {metric} ------------")
         patient = []
         therapist = []
         for _, row in df.iterrows():
@@ -37,6 +63,11 @@ def analyze_speakers(df: pd.DataFrame):
                 patient.append(row[metric])
             elif speaker == "T":
                 therapist.append(row[metric])
+
+        patient = np.asarray(patient)
+        therapist = np.asarray(therapist)
+
+        difference_test(["P", "T"], patient, therapist)
 
 
 def analyze_genders(df: pd.DataFrame):
@@ -49,18 +80,34 @@ def analyze_genders(df: pd.DataFrame):
     raise NotImplementedError
 
 
-def difference_test(arr1: np.ndarray, arr2: np.ndarray) -> Dict:
+def difference_test(labels: List, arr0: np.ndarray, arr1: np.ndarray) -> Dict:
     """
     Given two arrays, each array containing numbers from two different samples,
     compute the two-tailed independent t-test.
     
     Args:
+        arr0 (np.ndarray): Samples from group 0.
         arr1 (np.ndarray): Samples from group 1.
-        arr2 (np.ndarray): Samples from group 2.
     
     Returns:
         Dict: Struct containing confidence intervals, p-values, etc.
     """
+    # Test whether arr0 and arr1 are normally distributed.
+    # Compute t-test/p-values.
+    statistic0, pvalue0 = scipy.stats.shapiro(arr0)
+    statistic1, pvalue1 = scipy.stats.shapiro(arr1)
+
+    print("Shapiro-Wilk")
+    print(f"\t{labels[0]} w: {statistic0:.4f}\tP: {pvalue0:.3e}")
+    print(f"\t{labels[1]} w: {statistic1:.4f}\tP: {pvalue1:.3e}")
+
+    print("Students t-test")
+    stat, pval = scipy.stats.ttest_ind(arr0, arr1)
+    print(f"\tt: {stat:.4f}\tP: {pval:.3e}")
+
+    print("Mann-Whitney U-test")
+    stat, pval = scipy.stats.mannwhitneyu(arr0, arr1)
+    print(f"\tu: {stat:.4f}\tP: {pval:.3e}")
 
 
 if __name__ == "__main__":
