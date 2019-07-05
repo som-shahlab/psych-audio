@@ -309,4 +309,3 @@ def get_subphrases(line: str) -> List[Tuple[str, str]]:
             subphrases.append(item)
 
     return subphrases
-

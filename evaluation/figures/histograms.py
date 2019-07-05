@@ -30,7 +30,6 @@ BLACK = (0, 0, 0)
 
 def main():
     df = pd.read_csv(evaluation.config.TABLE2_FQN, sep="\t")
-
     # Compute the aggregate plot.
     create_aggregate_plot(df)
 
@@ -244,14 +243,18 @@ def statistical_tests(out_fqn: str, arr1: np.ndarray, arr2: np.ndarray, labels):
     axes[1].get_lines()[0].set_markerfacecolor(DARKBLUE)
 
     # Compute t-test/p-values.
-    print("Shapiro")
     statistic1, pvalue1 = scipy.stats.shapiro(arr1)
     statistic2, pvalue2 = scipy.stats.shapiro(arr2)
-    print(f"{labels[0]}: stat: {statistic1:.4f}\tP: {pvalue1:.4f}")
-    print(f"{labels[1]}: stat: {statistic2:.4f}\tP: {pvalue2:.4f}")
+    print(
+        f"Shapiro-Wilk: Arr1: Statistic: {statistic1:.4f}\tP-Value: {pvalue1:.4f}"
+    )
+    print(
+        f"Shapiro-Wilk: Arr2: Statistic: {statistic2:.4f}\tP-Value: {pvalue2:.4f}"
+    )
 
     stat, pval = scipy.stats.mannwhitneyu(arr1, arr2)
-    print(f"Mann-Whitney: {stat:.4f}\tP: {pval:.4f}")
+    print(f"Mann-Whitney: Statistic: {stat:.4f}\tP-Value: {pval:.4f}")
+>>>>>>> bfdd70046031d777d30f56c1142329877c2c0741
     plt.savefig(qq_fqn, pad_inches=0, bbox_inches="tight")
     print(qq_fqn)
 
@@ -263,7 +266,8 @@ def fit_normal_line(
     Fits a normal distribution to the histogram.
     
     Args:
-        arr (np.ndarray): Array of original values. This will be fed into the plt.hist/np.histogram function.
+        arr (np.ndarray): Array of original values. This will be fed into
+            the plt.hist/np.histogram function.
         n_bins (int): Number of bins to use.
     
     Returns:

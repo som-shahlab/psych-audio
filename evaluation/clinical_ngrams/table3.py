@@ -15,7 +15,11 @@ import evaluation.util
 from evaluation import config
 
 SPEAKERS = ["T", "P"]
+<<<<<<< HEAD
 OUTCOMES = ["TP", "FP", "FN", "TN", "P"]
+=======
+OUTCOMES = ["TP", "FP", "FN", "TN"]
+>>>>>>> bfdd70046031d777d30f56c1142329877c2c0741
 
 
 def main(args):
@@ -69,7 +73,6 @@ def main(args):
             elif n_gt < n_pred:
                 fp = n_pred - tp
             tn = n_ngrams - tp - fn - fp
-
             counts[term]["P"] += tp + fn
             counts[term]["TP"] += tp
             counts[term]["FN"] += fn
@@ -119,4 +122,3 @@ def load_terms() -> Dict[str, int]:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     main(parser.parse_args())
-

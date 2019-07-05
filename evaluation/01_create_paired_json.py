@@ -259,4 +259,3 @@ if __name__ == "__main__":
         help="Location of the ground truth json transcription.",
     )
     main(parser.parse_args())
-
