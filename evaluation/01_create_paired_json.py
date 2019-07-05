@@ -34,7 +34,8 @@ def main(args):
         print(f"Path does not exist: {args.gt_dir}")
         sys.exit(0)
 
-    # Creates a single dictionary, indexed by GID, and contains values: gt sentence, pred sentence, etc.
+    # Creates a single dictionary, indexed by GID, and contains
+    # values: gt sentence, pred sentence, etc.
     paired: Dict[int, Dict] = {}
 
     # Loop over all sessions.
@@ -159,8 +160,9 @@ def create_segments(seg_ts: List[float], data: Dict) -> List[str]:
             segments.append("")
 
     # Ignore the last segment because we don't know when it ends.
-    # That is, the ground truth can end at 20 minutes, but the audio goes until 30 minutes. As a result,
-    # we will have 10 minutes of machine transcript that will be considered wrong.
+    # That is, the ground truth can end at 20 minutes, but the audio goes
+    # until 30 minutes. As a result, we will have 10 minutes of machine
+    # transcript that will be considered wrong.
     # Process the last segment/bucket.
     # idx = np.where(seg_ts[-1] <= data_ts)[0]
     # if len(idx) == 0:

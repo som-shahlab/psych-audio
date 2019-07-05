@@ -13,6 +13,7 @@ import scipy.stats
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 from matplotlib.ticker import FormatStrFormatter
+import evaluation.config
 
 METRICS = ["WER", "BLEU", "COSINE", "EMD"]
 X_AXIS_LABEL = {
@@ -28,8 +29,7 @@ BLACK = (0, 0, 0)
 
 
 def main():
-    df = pd.read_csv("results/table2.tsv", sep="\t")
-
+    df = pd.read_csv(evaluation.config.TABLE2_FQN, sep="\t")
     # Compute the aggregate plot.
     create_aggregate_plot(df)
 
@@ -68,11 +68,11 @@ def main():
 
 def create_aggregate_plot(df: pd.DataFrame):
     """
-	Creates the aggregate plot.
-	
-	Args:
-		df (pd.DataFrame): Pandas dataframe of the session-level stats.
-	"""
+    Creates the aggregate plot.
+    
+    Args:
+        df (pd.DataFrame): Pandas dataframe of the session-level stats.
+    """
     # For each hash, compute the metrics.
     hashes = set(df["hash"])
 
@@ -109,15 +109,15 @@ def create_dual_hist(
     labels: List[str],
 ):
     """
-	Creates a single plot with two histograms.
-	
-	Args:
-		out_fqn: Location to save the figure.
-		arr1 (np.ndarray): Dataset 1 of values.
-		arr2 (np.ndarray): Dataset 2 of values.
-		labels (List[str]): List of labels to use for the legend.
-	"""
-    n_bins = 25
+    Creates a single plot with two histograms.
+    
+    Args:
+        out_fqn: Location to save the figure.
+        arr1 (np.ndarray): Dataset 1 of values.
+        arr2 (np.ndarray): Dataset 2 of values.
+        labels (List[str]): List of labels to use for the legend.
+    """
+    n_bins = 30
     line_thickness = 3
 
     fig, axes = plt.subplots(
@@ -215,13 +215,13 @@ def create_dual_hist(
 
 def statistical_tests(out_fqn: str, arr1: np.ndarray, arr2: np.ndarray, labels):
     """
-	Runs our suite of statistial tests and saves the Q-Q normality plot.
+    Runs our suite of statistial tests and saves the Q-Q normality plot.
 
-	Args:
-		out_fqn (str): Histogram fqn. We will use the filename.
-		arr1: Array 1 for comparison.
-		arr2: Array 2 for comparison.
-	"""
+    Args:
+        out_fqn (str): Histogram fqn. We will use the filename.
+        arr1: Array 1 for comparison.
+        arr2: Array 2 for comparison.
+    """
     qq_fqn = out_fqn.replace("hist_", "qq_")
     fig, axes = plt.subplots(
         # figsize=(width, height)
@@ -262,16 +262,17 @@ def fit_normal_line(
     arr: np.ndarray, n_bins: int, max_val
 ) -> (np.ndarray, np.ndarray):
     """
-	Fits a normal distribution to the histogram.
-	
-	Args:
-		arr (np.ndarray): Array of original values. This will be fed into the plt.hist/np.histogram function.
-		n_bins (int): Number of bins to use.
-	
-	Returns:
-		x: X values of the fitted line.
-		y: Y values of the fitted line.
-	"""
+    Fits a normal distribution to the histogram.
+    
+    Args:
+        arr (np.ndarray): Array of original values. This will be fed into
+            the plt.hist/np.histogram function.
+        n_bins (int): Number of bins to use.
+    
+    Returns:
+        x: X values of the fitted line.
+        y: Y values of the fitted line.
+    """
     mu, sigma = arr.mean(), arr.std()
     x = np.arange(0, max_val, 0.01)
     y = (1 / (np.sqrt(2 * np.pi) * sigma)) * np.exp(
@@ -280,9 +281,6 @@ def fit_normal_line(
     y = y / y.sum()
 
     return x, y
-
-
-# def iteratively_find_width(mean, std, target_prob):
 
 
 if __name__ == "__main__":

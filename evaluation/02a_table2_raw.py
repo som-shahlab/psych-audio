@@ -53,8 +53,7 @@ def main(args):
     hash2dim_values, _ = load_dimensions()
 
     # For each hash, output its metrics along with its relevant metadata.
-    out_fqn = "table2.tsv"
-    with open(out_fqn, "w") as f:
+    with open(config.TABLE2_FQN, "w") as f:
         # Write the header.
         f.write("hash\tspeaker\tgender\tsess_num\tage\tphq")
         for metric in METRIC_NAMES:
@@ -254,8 +253,7 @@ def worker(
                 if is_valid_distance(cosine):
                     accumulator["COSINE"].append(cosine)
 
-                # Generate a random sentence and measure the performance of
-                # a random sentence.
+                # Generate a random sentence and measure the performance of a random sentence.
                 random_sentence = eeu.random_sentences(1, use_corpus=False)[0]
                 rand_cosine, rand_emd = compute_distances(
                     model, w2v_keys, segment_gt, random_sentence
@@ -343,3 +341,4 @@ if __name__ == "__main__":
         help="If True, does not compute embeddings.",
     )
     main(parser.parse_args())
+
