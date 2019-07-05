@@ -254,7 +254,6 @@ def statistical_tests(out_fqn: str, arr1: np.ndarray, arr2: np.ndarray, labels):
 
     stat, pval = scipy.stats.mannwhitneyu(arr1, arr2)
     print(f"Mann-Whitney: Statistic: {stat:.4f}\tP-Value: {pval:.4f}")
->>>>>>> bfdd70046031d777d30f56c1142329877c2c0741
     plt.savefig(qq_fqn, pad_inches=0, bbox_inches="tight")
     print(qq_fqn)
 
