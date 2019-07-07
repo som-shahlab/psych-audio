@@ -12,8 +12,7 @@ import evaluation.config
 
 
 def main():
-    # df = pd.read_csv(evaluation.config.TABLE2_FQN, sep="\t")
-    df = pd.read_csv("table2.tsv", sep="\t")
+    df = pd.read_csv(evaluation.config.TABLE2_FQN, sep="\t")
 
     # Compute aggregate.
     compute_aggregate(df)
