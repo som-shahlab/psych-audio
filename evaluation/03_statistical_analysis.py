@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from typing import *
 import evaluation.config
+import evaluation.stats
 
 
 def main():
@@ -80,7 +81,7 @@ def analyze_speakers(df: pd.DataFrame):
         patient = np.asarray(patient)
         therapist = np.asarray(therapist)
 
-        difference_test(["P", "T"], patient, therapist)
+        evaluation.stats.difference_test(["P", "T"], patient, therapist)
 
 
 def mean_std_string(arr: Union[List, np.ndarray]) -> str:
@@ -131,37 +132,7 @@ def analyze_genders(df: pd.DataFrame):
         male = np.asarray(male)
         female = np.asarray(female)
 
-        difference_test(["M", "F"], male, female)
-
-
-def difference_test(labels: List, arr0: np.ndarray, arr1: np.ndarray) -> Dict:
-    """
-    Given two arrays, each array containing numbers from two different samples,
-    compute the two-tailed independent t-test.
-    
-    Args:
-        arr0 (np.ndarray): Samples from group 0.
-        arr1 (np.ndarray): Samples from group 1.
-    
-    Returns:
-        Dict: Struct containing confidence intervals, p-values, etc.
-    """
-    # Test whether arr0 and arr1 are normally distributed.
-    # Compute t-test/p-values.
-    statistic0, pvalue0 = scipy.stats.shapiro(arr0)
-    statistic1, pvalue1 = scipy.stats.shapiro(arr1)
-
-    print("Shapiro-Wilk")
-    print(f"\t{labels[0]} w: {statistic0:.4f}\tP: {pvalue0:.3e}")
-    print(f"\t{labels[1]} w: {statistic1:.4f}\tP: {pvalue1:.3e}")
-
-    print("Students t-test")
-    stat, pval = scipy.stats.ttest_ind(arr0, arr1)
-    print(f"\tt: {stat:.4f}\tP: {pval:.3e}")
-
-    print("Mann-Whitney U-test")
-    stat, pval = scipy.stats.mannwhitneyu(arr0, arr1)
-    print(f"\tu: {stat:.4f}\tP: {pval:.3e}")
+        evaluation.stats.difference_test(["M", "F"], male, female)
 
 
 if __name__ == "__main__":
