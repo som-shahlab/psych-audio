@@ -297,3 +297,46 @@ def pairwise_wmd(model, sentences: List[str]) -> np.ndarray:
     pbar.close()
     dists = np.asarray(dists)
     return dists
+
+
+def compute_distances(
+    model: Dict, keys: Set, sentence1: str, sentence2: str
+) -> (float, float):
+    """
+    Computes EMD and cosine distance.
+    
+    Args:
+        model: Gensim model from:
+            >>> import gensim.downloader as api
+            >>> model = api.load("word2vec-google-news-300")
+        keys: List of words in the model's dictionary
+            >>> keys = set(model.vocab)
+        sentence1 (str): Sentence 1 to be used for distance computation.
+        sentence2 (str): Sentence 2 to be used for distance computation.
+    """
+    # EMD requires List[str] of words.
+    emd = model.wmdistance(sentence1.split(" "), sentence2.split(" "))
+
+    # Exctract embeddings.
+    embed1 = encode_from_dict("word2vec", model, keys, sentence1)
+    embed2 = encode_from_dict("word2vec", model, keys, sentence2)
+
+    # Cosine distance.
+    cosine = None
+    if embed1 is not None and embed2 is not None:
+        cosine = scipy.spatial.distance.cosine(embed1, embed2)
+
+    return cosine, emd
+
+
+def is_valid_distance(number: float):
+    """Checks if the number is a valid (non inf, nan, etc.) distance."""
+    if number is None:
+        return False
+    if math.isnan(number):
+        return False
+    if math.isinf(number):
+        return False
+    if number < 0:
+        return False
+    return True
