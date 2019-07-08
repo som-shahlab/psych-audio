@@ -19,7 +19,7 @@ import evaluation.embeddings.util as eeu
 
 def main():
     # Load the W2V model.
-    print(f"Loading the model..")
+    print(f"Loading word2vec (takes 2-3 minutes)..")
     model = api.load("word2vec-google-news-300")
     w2v_keys = set(model.vocab)
 
@@ -100,7 +100,7 @@ def main():
         ["WER Self-Harm", "WER Corpus"], wers["All"], corpus_wers
     )
     evaluation.stats.difference_test(
-        ["EMD Self-Harm", "EMD Corpus"], emd["All"], corpus_emds
+        ["EMD Self-Harm", "EMD Corpus"], emds["All"], corpus_emds
     )
 
 
@@ -120,18 +120,31 @@ def get_random_corpus_wers_emds(model, N: int):
 
     # Select random examples.
     keys = list(paired.keys())
-    ridxs = np.random.choice(len(keys), N, replace=False)
 
     # Compute WERs.
     wers = np.zeros((N,))
     emds = np.zeros((N,))
-    for i, ridx in enumerate(ridxs):
+    idx = 0
+    # Sometimes the predicted sentence is a blank sentence and will cause
+    # EMD to be nan. Therefore, keep selecting a differnt one.
+    while idx < N:
+        # Select a random gid.
+        ridx = np.random.choice(len(keys), 1)[0]
         gid = keys[ridx]
+
+        # Get GT and pred.
         pred = paired[gid]["pred"]
         gt = paired[gid]["gt"]
-        wers[i] = evaluation.util.word_error_rate(pred, gt)
+
+        # Compute WER and EMD.
+        wer = evaluation.util.word_error_rate(pred, gt)
         _, emd = eeu.compute_distances(model, w2v_keys, gt, pred)
-        emds[i] = emd
+
+        # If EMD is valid, store results and continue.
+        if eeu.is_valid_distance(emd):
+            wers[idx] = wer
+            emds[idx] = emd
+            idx += 1
 
     return wers, emds
 

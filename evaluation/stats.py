@@ -40,7 +40,7 @@ def difference_test(labels: List, arr0: np.ndarray, arr1: np.ndarray) -> Dict:
     stat, pval = scipy.stats.ttest_ind(arr0, arr1, equal_var=True)
     print(f"\tt: {stat:.4f}\tP: {pval:.3e}")
 
-    print("Student t-test (Unequal Var; Normally Distributed")
+    print("Student t-test (Unequal Var; Normally Distributed)")
     stat, pval = scipy.stats.ttest_ind(arr0, arr1, equal_var=False)
     print(f"\tt: {stat:.4f}\tP: {pval:.3e}")
 
