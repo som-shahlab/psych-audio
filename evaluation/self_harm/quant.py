@@ -10,15 +10,18 @@ import scipy.stats
 import numpy as np
 import pandas as pd
 import preproc.util
+import evaluation.stats
 import evaluation.util
+import gensim.downloader as api
 from evaluation.self_harm import config
 import evaluation.embeddings.util as eeu
 
 
 def main():
     # Load the W2V model.
-    # print(f"Loading the model..")
-    # model, keys = eeu.load_embedding_model("word2vec")
+    print(f"Loading the model..")
+    model = api.load("word2vec-google-news-300")
+    w2v_keys = set(model.vocab)
 
     # Load the EID -> speaker file.
     eid2speaker = {}
@@ -67,8 +70,10 @@ def main():
         wers["All"].append(wer)
 
         # Compute EMD.
-        # embeddings = eeu.batch_encode("word2vec", model, keys, [gt, pred])
-        # print(embeddings)
+        _, emd = eeu.compute_distances(model, w2v_keys, gt, pred)
+        if eeu.is_valid_distance(emd):
+            emds[speaker].append(emd)
+            emds["All"].append(emd)
 
     for k, v in wers.items():
         wers[k] = np.asarray(v)
@@ -85,25 +90,31 @@ def main():
 
     # Compare to randomly selected sentences from the corpus.
     # Select random N paired examples from the corpus.
-    corpus_wers = get_random_corpus_wers(N)
+    corpus_wers, corpus_emds = get_random_corpus_wers_emds(model, N)
     print("Corpus WERs")
     evaluation.util.print_metrics(corpus_wers)
+    print("Corpus EMDs")
+    evaluation.util.print_metrics(corpus_emds)
 
-    print("Corpus vs Self-Harm")
-    statistic, pval = scipy.stats.ttest_ind(
-        wers["All"], corpus_wers, equal_var=False
+    evaluation.stats.difference_test(
+        ["WER Self-Harm", "WER Corpus"], wers["All"], corpus_wers
     )
-    print(f"t-Statistic: {statistic}")
-    print(f"Two-Tailed P Value: {pval}")
+    evaluation.stats.difference_test(
+        ["EMD Self-Harm", "EMD Corpus"], emd["All"], corpus_emds
+    )
 
 
-def get_random_corpus_wers(N: int):
+def get_random_corpus_wers_emds(model, N: int):
     """
-    Loads the paired.json file, selects N examples randomly, then computes WER.
+    Loads the paired.json file, selects N examples randomly,
+    then computes WER and EMD.
     
     Args:
+        model: Gensim model for computing EMD.
         N (int): Number of sentences to select.
     """
+    w2v_keys = set(model.vocab)
+
     # Load the paired file.
     paired = evaluation.util.load_paired_json(skip_empty=True)
 
@@ -113,13 +124,16 @@ def get_random_corpus_wers(N: int):
 
     # Compute WERs.
     wers = np.zeros((N,))
+    emds = np.zeros((N,))
     for i, ridx in enumerate(ridxs):
         gid = keys[ridx]
         pred = paired[gid]["pred"]
         gt = paired[gid]["gt"]
         wers[i] = evaluation.util.word_error_rate(pred, gt)
+        _, emd = eeu.compute_distances(model, w2v_keys, gt, pred)
+        emds[i] = emd
 
-    return wers
+    return wers, emds
 
 
 if __name__ == "__main__":
