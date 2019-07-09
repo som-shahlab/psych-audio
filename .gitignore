@@ -3,9 +3,14 @@ d757ae27e128.json
 __pycache__/
 *.py[cod]
 *$py.class
+.idea/
+.vscode/
 
 # C extensions
 *.so
+
+*.png
+*.tsv
 
 # Distribution / packaging
 .Python
@@ -103,3 +108,14 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+.idea/misc.xml
+.idea/modules.xml
+.idea/psych-audio.iml
+.idea/other.xml
+.idea/workspace.xml
+.idea/vcs.xml
+.idea/codeStyles/codeStyleConfig.xml
+.idea/inspectionProfiles/Project_Default.xml
+.idea/dictionaries/ahaque.xml
+.vscode/launch.json
+.vscode/settings.json
