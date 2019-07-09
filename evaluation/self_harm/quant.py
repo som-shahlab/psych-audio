@@ -21,8 +21,49 @@ def main():
     # Load the W2V model.
     print(f"Loading word2vec (takes 2-3 minutes)..")
     model = api.load("word2vec-google-news-300")
-    w2v_keys = set(model.vocab)
 
+    # Load the self-harm data.
+    print("Computing corpus-level results...")
+    harm_wers, harm_emds = compute_self_harm_metrics(model)
+
+    # Load the corpus-level data.
+    df = pd.read_csv(evaluation.config.TABLE2_FQN, sep="\t")
+    corpus_wers = df["WER"].values
+    corpus_emds = df["EMD"].values
+
+    print("------ Self-Harm WER ------")
+    evaluation.util.print_metrics("Therapist", harm_wers["T"])
+    evaluation.util.print_metrics("Patient", harm_wers["P"])
+    evaluation.util.print_metrics("Aggregate", harm_wers["All"])
+    evaluation.util.print_metrics("Corpus", corpus_wers)
+
+    print("------ Self-Harm EMD ------")
+    evaluation.util.print_metrics("Therapist", harm_emds["T"])
+    evaluation.util.print_metrics("Patient", harm_emds["P"])
+    evaluation.util.print_metrics("Aggregate", harm_emds["All"])
+    evaluation.util.print_metrics("Corpus", corpus_emds)
+
+    evaluation.stats.difference_test(
+        ["WER Self-Harm", "WER Corpus"], harm_wers["All"], corpus_wers
+    )
+    evaluation.stats.difference_test(
+        ["EMD Self-Harm", "EMD Corpus"], harm_emds["All"], corpus_emds
+    )
+
+
+def compute_self_harm_metrics(model):
+    """
+    Computes self-harm WER and EMD.
+
+    Args:
+        model: Gensim model.
+
+    Returns:
+        wers: Dictionary containing keys 'T', 'P', 'All'. Each dictionary
+            value is a python list of numbers, which correspond to a data
+            point for WER (e.g., one sentence).
+        emds: Same as `wers` but for earth mover distance (EMD).
+    """
     # Load the EID -> speaker file.
     eid2speaker = {}
     with open(config.SPEAKER_FILE, "r") as f:
@@ -70,81 +111,13 @@ def main():
         wers["All"].append(wer)
 
         # Compute EMD.
-        _, emd = eeu.compute_distances(model, w2v_keys, gt, pred)
+        _, emd = eeu.compute_distances(model, set(model.vocab), gt, pred)
         if eeu.is_valid_distance(emd):
             emds[speaker].append(emd)
             emds["All"].append(emd)
 
     for k, v in wers.items():
         wers[k] = np.asarray(v)
-
-    print("Therapist")
-    evaluation.util.print_metrics(wers["T"])
-
-    print("Patient")
-    evaluation.util.print_metrics(wers["P"])
-
-    print("All")
-    evaluation.util.print_metrics(wers["All"])
-    N = len(wers["All"])
-
-    # Compare to randomly selected sentences from the corpus.
-    # Select random N paired examples from the corpus.
-    corpus_wers, corpus_emds = get_random_corpus_wers_emds(model, N)
-    print("Corpus WERs")
-    evaluation.util.print_metrics(corpus_wers)
-    print("Corpus EMDs")
-    evaluation.util.print_metrics(corpus_emds)
-
-    evaluation.stats.difference_test(
-        ["WER Self-Harm", "WER Corpus"], wers["All"], corpus_wers
-    )
-    evaluation.stats.difference_test(
-        ["EMD Self-Harm", "EMD Corpus"], emds["All"], corpus_emds
-    )
-
-
-def get_random_corpus_wers_emds(model, N: int):
-    """
-    Loads the paired.json file, selects N examples randomly,
-    then computes WER and EMD.
-    
-    Args:
-        model: Gensim model for computing EMD.
-        N (int): Number of sentences to select.
-    """
-    w2v_keys = set(model.vocab)
-
-    # Load the paired file.
-    paired = evaluation.util.load_paired_json(skip_empty=True)
-
-    # Select random examples.
-    keys = list(paired.keys())
-
-    # Compute WERs.
-    wers = np.zeros((N,))
-    emds = np.zeros((N,))
-    idx = 0
-    # Sometimes the predicted sentence is a blank sentence and will cause
-    # EMD to be nan. Therefore, keep selecting a differnt one.
-    while idx < N:
-        # Select a random gid.
-        ridx = np.random.choice(len(keys), 1)[0]
-        gid = keys[ridx]
-
-        # Get GT and pred.
-        pred = paired[gid]["pred"]
-        gt = paired[gid]["gt"]
-
-        # Compute WER and EMD.
-        wer = evaluation.util.word_error_rate(pred, gt)
-        _, emd = eeu.compute_distances(model, w2v_keys, gt, pred)
-
-        # If EMD is valid, store results and continue.
-        if eeu.is_valid_distance(emd):
-            wers[idx] = wer
-            emds[idx] = emd
-            idx += 1
 
     return wers, emds
 
