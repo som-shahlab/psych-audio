@@ -77,8 +77,7 @@ def main(args):
                     value = hash2metrics[hash_][speaker][metric]
                     f.write(f"\t{value}")
                 f.write("\n")
-    print(out_fqn)
-    sys.exit(0)
+    print(config.TABLE2_FQN)
 
 
 def load_dimensions() -> (Dict[str, Dict[str, int]], Dict[str, List[int]]):
@@ -245,22 +244,22 @@ def worker(
                 # Compare the GT vs pred.
                 segment_gt = gts[hash_][speaker][j]
                 segment_pred = preds[hash_][speaker][j]
-                cosine, emd = compute_distances(
+                cosine, emd = eeu.compute_distances(
                     model, w2v_keys, segment_gt, segment_pred
                 )
-                if is_valid_distance(emd):
+                if eeu.is_valid_distance(emd):
                     accumulator["EMD"].append(emd)
-                if is_valid_distance(cosine):
+                if eeu.is_valid_distance(cosine):
                     accumulator["COSINE"].append(cosine)
 
                 # Generate a random sentence and measure the performance of a random sentence.
                 random_sentence = eeu.random_sentences(1, use_corpus=False)[0]
-                rand_cosine, rand_emd = compute_distances(
+                rand_cosine, rand_emd = eeu.compute_distances(
                     model, w2v_keys, segment_gt, random_sentence
                 )
-                if is_valid_distance(rand_emd):
+                if eeu.is_valid_distance(rand_emd):
                     accumulator["RAND_EMD"].append(rand_emd)
-                if is_valid_distance(rand_cosine):
+                if eeu.is_valid_distance(rand_cosine):
                     accumulator["RAND_COSINE"].append(rand_cosine)
 
             # Compute the session-level mean cosine and EMD.
@@ -273,38 +272,6 @@ def worker(
         r.put((hash_, speaker, "BLEU", bleu))
         r.put((hash_, speaker, "RAND_WER", rand_wer))
         r.put((hash_, speaker, "RAND_BLEU", rand_bleu))
-
-
-def compute_distances(
-    model: Dict, keys: Set, sentence1: str, sentence2: str
-) -> (float, float):
-    """Computes EMD and cosine distance."""
-    # EMD requires List[str] of words.
-    emd = model.wmdistance(sentence1.split(" "), sentence2.split(" "))
-
-    # Exctract embeddings.
-    embed1 = eeu.encode_from_dict("word2vec", model, keys, sentence1)
-    embed2 = eeu.encode_from_dict("word2vec", model, keys, sentence2)
-
-    # Cosine distance.
-    cosine = None
-    if embed1 is not None and embed2 is not None:
-        cosine = scipy.spatial.distance.cosine(embed1, embed2)
-
-    return cosine, emd
-
-
-def is_valid_distance(number: float):
-    """Checks if the number is a valid (non inf, nan, etc.) distance."""
-    if number is None:
-        return False
-    if math.isnan(number):
-        return False
-    if math.isinf(number):
-        return False
-    if number < 0:
-        return False
-    return True
 
 
 def get_mean_std(

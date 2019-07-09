@@ -70,14 +70,16 @@ def word_error_rate(pred: List[str], target: List[str]) -> float:
     return wer
 
 
-def print_metrics(arr: np.ndarray):
+def print_metrics(label: str, arr: np.ndarray):
     """
     Prints the mean, standard deviation, median and range of an array.
     
     Args:
+        label: Label of what the arr contains (e.g., male, therapist)
         arr (np.ndarray): Array of data.
     """
-    assert isinstance(arr, np.ndarray)
+    if not isinstance(arr, np.ndarray):
+        arr = np.asarray(arr)
     assert arr.ndim == 1
     mean = arr.mean()
     median = np.median(arr)
@@ -85,6 +87,6 @@ def print_metrics(arr: np.ndarray):
     min_ = arr.min()
     max_ = arr.max()
     N = len(arr)
-    result1 = f"average (SD) of {mean:.3f} ({std:.3f}) with"
-    result2 = f" (median [range], {median:.3f} [{min_:.3f}-{max_:.3f}]; n={N})"
+    result1 = f"{label} avg (SD) of {mean:.3f} ({std:.3f}) with"
+    result2 = f" (med [rng], {median:.3f} [{min_:.3f}-{max_:.3f}]; n={N})"
     print(result1 + result2)

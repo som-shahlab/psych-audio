@@ -10,16 +10,60 @@ import scipy.stats
 import numpy as np
 import pandas as pd
 import preproc.util
+import evaluation.stats
 import evaluation.util
+import gensim.downloader as api
 from evaluation.self_harm import config
 import evaluation.embeddings.util as eeu
 
 
 def main():
     # Load the W2V model.
-    # print(f"Loading the model..")
-    # model, keys = eeu.load_embedding_model("word2vec")
+    print(f"Loading word2vec (takes 2-3 minutes)..")
+    model = api.load("word2vec-google-news-300")
 
+    # Load the self-harm data.
+    print("Computing corpus-level results...")
+    harm_wers, harm_emds = compute_self_harm_metrics(model)
+
+    # Load the corpus-level data.
+    df = pd.read_csv(evaluation.config.TABLE2_FQN, sep="\t")
+    corpus_wers = df["WER"].values
+    corpus_emds = df["EMD"].values
+
+    print("------ Self-Harm WER ------")
+    evaluation.util.print_metrics("Therapist", harm_wers["T"])
+    evaluation.util.print_metrics("Patient", harm_wers["P"])
+    evaluation.util.print_metrics("Aggregate", harm_wers["All"])
+    evaluation.util.print_metrics("Corpus", corpus_wers)
+
+    print("------ Self-Harm EMD ------")
+    evaluation.util.print_metrics("Therapist", harm_emds["T"])
+    evaluation.util.print_metrics("Patient", harm_emds["P"])
+    evaluation.util.print_metrics("Aggregate", harm_emds["All"])
+    evaluation.util.print_metrics("Corpus", corpus_emds)
+
+    evaluation.stats.difference_test(
+        ["WER Self-Harm", "WER Corpus"], harm_wers["All"], corpus_wers
+    )
+    evaluation.stats.difference_test(
+        ["EMD Self-Harm", "EMD Corpus"], harm_emds["All"], corpus_emds
+    )
+
+
+def compute_self_harm_metrics(model):
+    """
+    Computes self-harm WER and EMD.
+
+    Args:
+        model: Gensim model.
+
+    Returns:
+        wers: Dictionary containing keys 'T', 'P', 'All'. Each dictionary
+            value is a python list of numbers, which correspond to a data
+            point for WER (e.g., one sentence).
+        emds: Same as `wers` but for earth mover distance (EMD).
+    """
     # Load the EID -> speaker file.
     eid2speaker = {}
     with open(config.SPEAKER_FILE, "r") as f:
@@ -67,59 +111,15 @@ def main():
         wers["All"].append(wer)
 
         # Compute EMD.
-        # embeddings = eeu.batch_encode("word2vec", model, keys, [gt, pred])
-        # print(embeddings)
+        _, emd = eeu.compute_distances(model, set(model.vocab), gt, pred)
+        if eeu.is_valid_distance(emd):
+            emds[speaker].append(emd)
+            emds["All"].append(emd)
 
     for k, v in wers.items():
         wers[k] = np.asarray(v)
 
-    print("Therapist")
-    evaluation.util.print_metrics(wers["T"])
-
-    print("Patient")
-    evaluation.util.print_metrics(wers["P"])
-
-    print("All")
-    evaluation.util.print_metrics(wers["All"])
-    N = len(wers["All"])
-
-    # Compare to randomly selected sentences from the corpus.
-    # Select random N paired examples from the corpus.
-    corpus_wers = get_random_corpus_wers(N)
-    print("Corpus WERs")
-    evaluation.util.print_metrics(corpus_wers)
-
-    print("Corpus vs Self-Harm")
-    statistic, pval = scipy.stats.ttest_ind(
-        wers["All"], corpus_wers, equal_var=False
-    )
-    print(f"t-Statistic: {statistic}")
-    print(f"Two-Tailed P Value: {pval}")
-
-
-def get_random_corpus_wers(N: int):
-    """
-    Loads the paired.json file, selects N examples randomly, then computes WER.
-    
-    Args:
-        N (int): Number of sentences to select.
-    """
-    # Load the paired file.
-    paired = evaluation.util.load_paired_json(skip_empty=True)
-
-    # Select random examples.
-    keys = list(paired.keys())
-    ridxs = np.random.choice(len(keys), N, replace=False)
-
-    # Compute WERs.
-    wers = np.zeros((N,))
-    for i, ridx in enumerate(ridxs):
-        gid = keys[ridx]
-        pred = paired[gid]["pred"]
-        gt = paired[gid]["gt"]
-        wers[i] = evaluation.util.word_error_rate(pred, gt)
-
-    return wers
+    return wers, emds
 
 
 if __name__ == "__main__":
