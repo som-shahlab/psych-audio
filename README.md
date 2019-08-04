@@ -2,11 +2,19 @@
 
 ![Banner Image](doc/banner.png)
 
+## Table of Contents
+
+[1. Introduction](#introduction)
+[2. Data Preprocessing](#data-preprocessing)
+[3. Speech-to-Text with Google Cloud](#speech-to-text-with-google-cloud)
+[4. Evaluation](#evaluation)
+[5. Reproducing Our Tables and Figures](#reproducing-otables-and-figures)
+
 ## 1   Introduction
 
-The aim of this project is to investigate whether automatic speech recognition can replace the manual transcription and coding process, with the hope of accelerating psychotherapy research. We collected a dataset containing 800 hours from psychotherapy sessions. We perform automatic transcription using publicly available cloud-based transcription services and analyze their performance compared to gold standard transcriptions by humans. Our analysis includes techniques from natural language processing.
+Accurate transcription of audio recordings in psychotherapy would improve therapy effectiveness, clinician training, and safety monitoring. Although automatic speech recognition software (ASR) is commercially available, its accuracy in mental health settings has not been well described. It is unclear which metrics and thresholds are appropriate for different clinical use cases, which may range from population descriptions to individual safety monitoring. In this work, we develop a framework for evaluating success and failure modes of automatic speech recognition systems in psychotherapy.
 
-## 2   Data Pre-Processing
+## 2   Data Preprocessing
 
 ### 2.1   Prerequisites
  [FFmpeg](https://www.ffmpeg.org/) contains various audio/visual encoding and decoding formats. To install FFmpeg:
@@ -41,9 +49,9 @@ squeue
 
 The output flac files will be placed in `OUTPUT_DIR`.
 
-### 2.3   Ground Truth JSON
+### 2.3   Reference Standard JSON
 
-The ground truth files are currently in TXT files, as delivered by the annotators. We need to convert these to JSON as a standardization step.
+The human-generated reference standard files (i.e., ground truth) are currently in TXT format, as delivered by the annotators. We need to convert these to JSON as a standardization step.
 
 1. Ensure that `gt_dir` is correct inside `preproc/config.py`.
 2. Run the following inside `preproc/`.
@@ -77,8 +85,7 @@ Option 2 is better than Option 1. Specifically, when we wish to tweak our transc
 
 To upload the files, see [gcloud/01_upload.py](gcloud/01_upload.py). Run it with the following command:
 ```bash
-cd gcloud
-python 01_upload.py DATA_DIR
+python gcloud/01_upload.py DATA_DIR
 ```
 
 where `DATA_DIR` is the folder containing audio files. While running, the script will print the total upload progress.
@@ -88,82 +95,113 @@ where `DATA_DIR` is the folder containing audio files. While running, the script
 Now that we have a single bucket containing only flac files, we can run transcription and diarization.
 
 ```bash
-cd gcloud
-python 02_transcribe.py OUTPUT_DIR
+python gcloud/02_transcribe.py OUTPUT_DIR
 ```
 
 where `OUTPUT_DIR` is your desired *local* folder where to store the json transcription results. This script will also print the transcription progress.
 
 ## 4   Evaluation
 
-The final step is to compute metrics between the Google Speech API and the ground truth. At this point, we should have two directories (and what we named them):
+Before we begin evaluation, we first combine Google Cloud ASR outputs with the human generated reference standard. The goal is to have a single JSON file which contains both the ASR output and reference transcriptions. This will make it very easy to compute metrics.
 
-1. `machine`: Contains the Google Speech API output transcriptions as JSON format.
-2. `gt`: Contains the ground truth transcriptions as JSON format (see Section 2.3).
-
-These JSON files serve as the final output of our algorithm. We will never edit them again. All downstream metrics will be computed by reading these JSON files.
-
-### 4.1   Phrase vs Session Level
-
-Each ground truth transcript contains multiple *phrases*. Each phrase is a short set of words, spoken either by the therapist or the patient (the ground truth provides the speaker identity, i.e., patient/therapist for each phrase.
-
-A *session* is composed of multiple phrases from a single speaker. For example, "session-level patient" refers to the concatenation of all phrases said by the patient in a given therapy session. This can also be done for the therapist.
-
-Before computing any metrics, we must split the ground truth and prediction files into phrases.
-
-```bash
-export PYTHONPATH=.
-python evaluation/phrase_level.py MACHINE_DIR GT_DIR
+Overall, the data folder should look like the following (including the FLAC audio files). Each hash (399c9e2...) denotes a different therapy session.
+```
+data/
+├── flac/
+│   ├── 399c9e27729c267ea14974421038444c1c90325212b99b2fead3f6990395358.flac
+│   ├── 6a6cba4540baeff375e0838e4080ab6c617835afea91dda6e29a4a67dbdcb1a.flac
+│   ├── ...
+├── gt/
+│   ├── 399c9e27729c267ea14974421038444c1c90325212b99b2fead3f6990395358.json
+│   └── 6a6cba4540baeff375e0838e4080ab6c617835afea91dda6e29a4a67dbdcb1a.json
+│   ├── ...
+├── machine
+    ├── 399c9e27729c267ea14974421038444c1c90325212b99b2fead3f6990395358.json
+    └── 6a6cba4540baeff375e0838e4080ab6c617835afea91dda6e29a4a67dbdcb1a.json
+    ├── ...
 ```
 
-where `MACHINE_DIR` is the directory of ASR-transcribed JSON files and `GT_DIR` is the directory of GT JSON files.
+4.1  Paired JSON File
 
-Running the above script will produce `results/session.csv`, `results/phrase.csv`, and `results/text.txt`. The `text.txt` file contains each phrase, split by speaker as well. The `session.csv` and `phrase.csv` files contain the quant metrics described below.
-
-### 4.2   WER, BLEU, GLEU
-
-We use an initial set of metrics for computing ASR performance.
-
-1. Word Error Rate (WER)
-2. Bilingual Evaluation Understudy ([BLEU](https://en.wikipedia.org/wiki/BLEU))
-3. Google's Evaluation Understudy ([GLEU](https://www.nltk.org/_modules/nltk/translate/gleu_score.html))
-
-### 4.3   Clinical Unigrams
-
-Four clinicians hand-picked words that were critical for detecting mental health issues. We refer to these words as "clinical unigrams". The idea is that WER, BLEU, give equal weight to words, when in reality, words such as "suicide" are much more important and should be reflected in the performance metrics.
+To create the single JSON file, which we will called `paired.json` (because it creates a pair, consisting of a reference standard sentence and an ASR sentence), run:
 
 ```bash
-python evaluation/clinical_unigrams.py TEXT_FILE
+python evaluation/01_create_paired_json.py data/machine data/gt
 ```
 
-where `TEXT_FILE` is the output from `evaluation/phrase_level.py`. It consists of the ground truth and predicted transcription, one on different lines. It is visually easy to compare sentences, as well as loading for automated processing.
+The paired json will be generated and will then create entries like:
 
-One naive approach is to compute the frequency of such unigrams in the ground truth, both at the phrase and session level. Then we compare the frequency in the predicted transcription.
+```
+ '556': {
+	 'hash': 'dd01803e57a3b95fcfab584bfb09aa604d80c0452ce5cd90f02669b0f9b9b5e',
+	 'ts': 102,
+	 'speaker': 'P',
+	 'gt': 'hello there how are you doing',
+	 'pred': 'hello their how arent you doing'
+}
+```
+Notice how we have the ground truth reference standard, ASR prediction, speaker (patient or therapist), hash, and timestamp, all in a single python dictionary!
 
-### 4.4   Embeddings
+### 4.2   Compute Metrics
 
-Extracting embeddings is time consuming. Therefore, we first extract embeddings, save them to disk, then compute similarity metrics on these saved embeddings.
+We compute semantic and syntactic similarity metrics. This equates to Earth Mover's Distance (EMD) and word error rate (WER), respectively. Extracting embeddings is time consuming. Therefore, we first extract embeddings, save them to disk, then compute similarity metrics on these saved embeddings.
 
-#### 4.4.1   Word2Vec
+Download the published Word2Vec model: [[Google Drive](https://drive.google.com/file/d/0B7XkCwpI5KDYNlNUTTlSS21pQmM/edit)] [[website](https://code.google.com/archive/p/word2vec/)] (1.5 GB)
 
-Download Word2Vec: [[Google Drive](https://drive.google.com/file/d/0B7XkCwpI5KDYNlNUTTlSS21pQmM/edit)] [[website](https://code.google.com/archive/p/word2vec/)] (1.5 GB)
+Once downloaded, uncompress the file: `gunzip GoogleNews-vectors-negative300.bin.gz` Take note of the location of the .bin file and update the `WORD2VEC_MODEL_FQN` variable inside `evaluation/config.py`.
 
-Once downloaded, uncompress the file: `gunzip GoogleNews-vectors-negative300.bin.gz`
+Then, we compute semantic distance and WER over all therapy sessions:
 
-Take note of the location of the .bin file and update the `WORD2VEC_MODEL_FQN` variable inside `evaluation/embeddings/config.py`.
+```bash
+python evaluation/02_compute_metrics.py
+```
 
-#### 4.4.2   GloVe
+The above command takes between 10 and 30 minutes to complete. It is multi-threaded by default. The bottleneck is computing word emebddings since this requires loading a very large English vocabulary. The resulting file will be a CSV file, similar to below:
 
-Download GloVe: [[zip](http://nlp.stanford.edu/data/glove.840B.300d.zip)] [[website](https://nlp.stanford.edu/projects/glove/)] (Common Crawl, 840B tokens, 2.0 GB)
+| hash                | speaker | WER  | BLEU | COSINE | EMD  | 
+|---------------------|---------|------|------|--------|------| 
+| 9c267ea1cb2fead3f95 | T       | 0.38 | 0.85 | 0.28   | 1.57 | 
+| 9c267ea1cb2fead3f95 | P       | 0.23 | 0.81 | 0.11   | 0.95 | 
+| ... | ... | ... | ... | ... | ... |
 
-Once downloaded, uncompress it: `unzip glove.840B.300d.zip`
+This table will be used to generate subgroup-level (i.e., gender, speaker, etc.) results and overall ASR performance.
 
-Take note of the location of the .bin file and update the `GLOVE_MODEL_FQN` variable inside `evaluation/embeddings/config.py`.
 
-#### 4.4.3   BERT
+## 5. Reproducing Our Tables and Figures
 
-Extracting BERT embeddings involves two parts: The server and the client.
+### 5.1  Figure 1: Boxplot Comparison
+![Figure 1 Boxplot](./doc/figure1.png) 
 
-1. Install the bert-as-a-service python package **and** download a BERT model: https://github.com/hanxiao/bert-as-service
-2. Start the BERT embedding server: `evaluation/embeddings/server/start.sh`
-3. Extract embeddings for each sentence: `evaluation/embeddings/02_bert_encode.py`
+Boxplot Figure 1 requires the CSV file from Section 4.2 to be completed.
+
+```bash
+python evaluation/figures/fig1_boxplot.py
+```
+
+The figure will be saved to a PNG file.
+
+### 5.2 Table 2: Aggregate Statistics
+![Table 2 Aggregate](./doc/table2.png) 
+
+Table 2 requires the CSV file from Section 4.2 to be completed.
+
+```bash
+python evaluation/03_statistical_analysis.py
+```
+The table values will be printed out to the command line.
+
+### 5.3 Table 3: PHQ Keyword Performance
+![Table 3 PHQ](./doc/table3.png) 
+
+```bash
+python evaluation/clinical_ngrams/table3.py
+```
+The table values will be printed out to the command line.
+
+### 5.4 Table 4: Types of Errors
+![Table 4 Errors](./doc/table4.png) 
+
+```bash
+python evaluation/self_harm/find_examples.py
+```
+The user will be shown several sentences for which the ASR made a mistake. The reference standard will be shown for comparison. The user must manually classify each error as a syntactic or semantic error, until a sufficient number of examples is found.
