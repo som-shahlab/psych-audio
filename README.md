@@ -4,17 +4,19 @@
 
 ## Table of Contents
 
-1. [Introduction](#1-introduction)
-2. [Data Preprocessing](#2-data-preprocessing)
-3. [Speech-to-Text with Google Cloud](#3-speech-to-text-with-google-cloud)
-4. [Evaluation](#4-evaluation)
-5. [Reproducing Our Tables and Figures](#5-reproducing-our-tables-and-figures)
+1. [Introduction](#intro)
+2. [Data Preprocessing](#prepro)
+3. [Speech-to-Text with Google Cloud](#asr)
+4. [Evaluation](#eval)
+5. [Reproducing Our Tables and Figures](#repro)
 
 ## 1. Introduction
+<a name="intro"></a>
 
 Accurate transcription of audio recordings in psychotherapy would improve therapy effectiveness, clinician training, and safety monitoring. Although automatic speech recognition software (ASR) is commercially available, its accuracy in mental health settings has not been well described. It is unclear which metrics and thresholds are appropriate for different clinical use cases, which may range from population descriptions to individual safety monitoring. In this work, we develop a framework for evaluating success and failure modes of automatic speech recognition systems in psychotherapy.
 
 ## 2. Data Preprocessing
+<a name="prepro"></a>
 
 ### 2.1   Prerequisites
  [FFmpeg](https://www.ffmpeg.org/) contains various audio/visual encoding and decoding formats. To install FFmpeg:
@@ -63,6 +65,7 @@ python 03_create_gt_json.py OUTPUT_DIR
 where `OUTPUT_DIR` is the target location to place the new, ground truth JSON files.
 
 ## 3. Speech-to-Text with Google Cloud
+<a name="asr"></a>
 
 ### 3.1 Prerequisites
 First, enter your GCloud key and bucket information in [gcloud/config.py](gcloud/config.py).
@@ -101,6 +104,7 @@ python gcloud/02_transcribe.py OUTPUT_DIR
 where `OUTPUT_DIR` is your desired *local* folder where to store the json transcription results. This script will also print the transcription progress.
 
 ## 4. Evaluation
+<a name="eval"></a>
 
 Before we begin evaluation, we first combine Google Cloud ASR outputs with the human generated reference standard. The goal is to have a single JSON file which contains both the ASR output and reference transcriptions. This will make it very easy to compute metrics.
 
@@ -168,6 +172,7 @@ This table will be used to generate subgroup-level (i.e., gender, speaker, etc.)
 
 
 ## 5. Reproducing Our Tables and Figures
+<a name="repro"></a>
 
 ### 5.1  Figure 1: Boxplot Comparison
 ![Figure 1 Boxplot](./doc/figure1.png) 
