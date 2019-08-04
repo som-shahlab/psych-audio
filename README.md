@@ -1,3 +1,5 @@
+<a name="top"></a>
+
 # Natural Language Analysis of Automatic Speech Recognition for Psychotherapy
 
 ![Banner Image](doc/banner.png)
@@ -19,6 +21,8 @@ Accurate transcription of audio recordings in psychotherapy would improve therap
 <a name="prepro"></a>
 
 ## 2. Data Preprocessing
+
+[Return to top](#top)
 
 ### 2.1   Prerequisites
  [FFmpeg](https://www.ffmpeg.org/) contains various audio/visual encoding and decoding formats. To install FFmpeg:
@@ -70,6 +74,8 @@ where `OUTPUT_DIR` is the target location to place the new, ground truth JSON fi
 
 ## 3. Speech-to-Text with Google Cloud
 
+[Return to top](#top)
+
 ### 3.1 Prerequisites
 First, enter your GCloud key and bucket information in [gcloud/config.py](gcloud/config.py).
 
@@ -109,6 +115,8 @@ where `OUTPUT_DIR` is your desired *local* folder where to store the json transc
 <a name="eval"></a>
 
 ## 4. Evaluation
+
+[Return to top](#top)
 
 Before we begin evaluation, we first combine Google Cloud ASR outputs with the human generated reference standard. The goal is to have a single JSON file which contains both the ASR output and reference transcriptions. This will make it very easy to compute metrics.
 
@@ -177,6 +185,8 @@ This table will be used to generate subgroup-level (i.e., gender, speaker, etc.)
 <a name="repro"></a>
 
 ## 5. Reproducing Our Tables and Figures
+
+[Return to top](#top)
 
 ### 5.1  Figure 1: Boxplot Comparison
 ![Figure 1 Boxplot](./doc/figure1.png) 
