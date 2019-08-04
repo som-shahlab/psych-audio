@@ -1,4 +1,4 @@
-# Psychotherapy Analysis Project
+# Natural Language Analysis of Automatic Speech Recognition for Psychotherapy
 
 ![Banner Image](doc/banner.png)
 
@@ -10,11 +10,11 @@
 4. [Evaluation](#4-evaluation)
 5. [Reproducing Our Tables and Figures](#5-reproducing-our-tables-and-figures)
 
-## 1   Introduction
+## 1. Introduction
 
 Accurate transcription of audio recordings in psychotherapy would improve therapy effectiveness, clinician training, and safety monitoring. Although automatic speech recognition software (ASR) is commercially available, its accuracy in mental health settings has not been well described. It is unclear which metrics and thresholds are appropriate for different clinical use cases, which may range from population descriptions to individual safety monitoring. In this work, we develop a framework for evaluating success and failure modes of automatic speech recognition systems in psychotherapy.
 
-## 2   Data Preprocessing
+## 2. Data Preprocessing
 
 ### 2.1   Prerequisites
  [FFmpeg](https://www.ffmpeg.org/) contains various audio/visual encoding and decoding formats. To install FFmpeg:
@@ -25,7 +25,7 @@ Accurate transcription of audio recordings in psychotherapy would improve therap
 Your FFmpeg binary can be entirely in user-space (i.e., you do not need sudo).
 
 
-### 2.2   Generating FLAC Files
+### 2.2 Generating FLAC Files
 
 In its raw form, our current audio files are in either WMA (windows media audio) or MP3 format. As [recommended by Google Cloud](https://cloud.google.com/speech-to-text/docs/best-practices), we convert our files to [FLAC](https://en.wikipedia.org/wiki/FLAC). In general, you should try to use FLAC for all your audio processing tasks. The MP3 format loses data during the compression process. While this is okay for human hearing (MP3 minimizes human perceptual data loss), it may lose important information for machine hearing tasks.
 
@@ -49,7 +49,7 @@ squeue
 
 The output flac files will be placed in `OUTPUT_DIR`.
 
-### 2.3   Reference Standard JSON
+### 2.3 Reference Standard JSON
 
 The human-generated reference standard files (i.e., ground truth) are currently in TXT format, as delivered by the annotators. We need to convert these to JSON as a standardization step.
 
@@ -62,9 +62,9 @@ python 03_create_gt_json.py OUTPUT_DIR
 
 where `OUTPUT_DIR` is the target location to place the new, ground truth JSON files.
 
-## 3   Speech-to-Text with Google Cloud
+## 3. Speech-to-Text with Google Cloud
 
-### 3.1   Prerequisites
+### 3.1 Prerequisites
 First, enter your GCloud key and bucket information in [gcloud/config.py](gcloud/config.py).
 
 - **Google Cloud API Key**. This should be a *service account*. The key should have permissions to Google Cloud storage and Google Speech-to-Text API. Easiest but not-security-recommended solution would grant the service account with *Project Owner* status/permissions.
@@ -75,7 +75,7 @@ Second, install the python dependencies.
 pip install -r requirements.txt
 ```
 
-### 3.2   Upload to Google Cloud
+### 3.2 Upload to Google Cloud
 
 Once the audio files have been cleaned and standardized, we now upload the files to Google Cloud. We have two options:
 1. We send the audio file to Google for each transcription request. Nothing will reside long-term on GCloud.
@@ -90,7 +90,7 @@ python gcloud/01_upload.py DATA_DIR
 
 where `DATA_DIR` is the folder containing audio files. While running, the script will print the total upload progress.
 
-### 3.3   Speech-to-Text
+### 3.3 Speech-to-Text
 
 Now that we have a single bucket containing only flac files, we can run transcription and diarization.
 
@@ -100,7 +100,7 @@ python gcloud/02_transcribe.py OUTPUT_DIR
 
 where `OUTPUT_DIR` is your desired *local* folder where to store the json transcription results. This script will also print the transcription progress.
 
-## 4   Evaluation
+## 4. Evaluation
 
 Before we begin evaluation, we first combine Google Cloud ASR outputs with the human generated reference standard. The goal is to have a single JSON file which contains both the ASR output and reference transcriptions. This will make it very easy to compute metrics.
 
@@ -121,7 +121,7 @@ data/
     ├── ...
 ```
 
-4.1  Paired JSON File
+4.1 Paired JSON File
 
 To create the single JSON file, which we will called `paired.json` (because it creates a pair, consisting of a reference standard sentence and an ASR sentence), run:
 
@@ -142,7 +142,7 @@ The paired json will be generated and will then create entries like:
 ```
 Notice how we have the ground truth reference standard, ASR prediction, speaker (patient or therapist), hash, and timestamp, all in a single python dictionary!
 
-### 4.2   Compute Metrics
+### 4.2 Compute Metrics
 
 We compute semantic and syntactic similarity metrics. This equates to Earth Mover's Distance (EMD) and word error rate (WER), respectively. Extracting embeddings is time consuming. Therefore, we first extract embeddings, save them to disk, then compute similarity metrics on these saved embeddings.
 
