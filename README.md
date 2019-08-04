@@ -4,21 +4,21 @@
 
 ## Table of Contents
 
-1. [Introduction](#markdown-header-introduction)
-2. [Data Preprocessing](#markdown-header-data-preprocessing)
-3. [Automatic Speech Recognition](#markdown-header-automatic-speech-recognition)
-4. [Evaluation](#markdown-header-evaluation)
-5. [Reproducing Our Tables and Figures](#markdown-header-reproducing-our-tables-and-figures)
+1. [Introduction](#markdown-header-1-introduction)
+2. [Data Preprocessing](#markdown-header-2-data-preprocessing)
+3. [Automatic Speech Recognition](#markdown-header-3-automatic-speech-recognition)
+4. [Evaluation](#markdown-header-4-evaluation)
+5. [Reproducing Our Tables and Figures](#markdown-header-5-reproducing-our-tables-and-figures)
 
 ## 1. Introduction
 
-[Return to top](#markdown-header-table-of-contents)
+[Return to top](#markdown-header-natural-language-analysis-of-automatic-speech-recognition-for-psychotherapy)
 
 Accurate transcription of audio recordings in psychotherapy would improve therapy effectiveness, clinician training, and safety monitoring. Although automatic speech recognition software (ASR) is commercially available, its accuracy in mental health settings has not been well described. It is unclear which metrics and thresholds are appropriate for different clinical use cases, which may range from population descriptions to individual safety monitoring. In this work, we develop a framework for evaluating success and failure modes of automatic speech recognition systems in psychotherapy.
 
 ## 2. Data Preprocessing
 
-[Return to top](#markdown-header-table-of-contents)
+[Return to top](#markdown-header-natural-language-analysis-of-automatic-speech-recognition-for-psychotherapy)
 
 ### 2.1   Prerequisites
  [FFmpeg](https://www.ffmpeg.org/) contains various audio/visual encoding and decoding formats. To install FFmpeg:
@@ -68,7 +68,7 @@ where `OUTPUT_DIR` is the target location to place the new, ground truth JSON fi
 
 ## 3. Automatic Speech Recognition
 
-[Return to top](#markdown-header-table-of-contents)
+[Return to top](#markdown-header-natural-language-analysis-of-automatic-speech-recognition-for-psychotherapy)
 
 ### 3.1 Prerequisites
 First, enter your GCloud key and bucket information in [gcloud/config.py](gcloud/config.py).
@@ -108,7 +108,7 @@ where `OUTPUT_DIR` is your desired *local* folder where to store the json transc
 
 ## 4. Evaluation
 
-[Return to top](#markdown-header-table-of-contents)
+[Return to top](#markdown-header-natural-language-analysis-of-automatic-speech-recognition-for-psychotherapy)
 
 Before we begin evaluation, we first combine Google Cloud ASR outputs with the human generated reference standard. The goal is to have a single JSON file which contains both the ASR output and reference transcriptions. This will make it very easy to compute metrics.
 
@@ -129,7 +129,7 @@ data/
     ├── ...
 ```
 
-4.1 Paired JSON File
+### 4.1 Paired JSON File
 
 To create the single JSON file, which we will called `paired.json` (because it creates a pair, consisting of a reference standard sentence and an ASR sentence), run:
 
@@ -176,7 +176,7 @@ This table will be used to generate subgroup-level (i.e., gender, speaker, etc.)
 
 ## 5. Reproducing Our Tables and Figures
 
-[Return to top](#markdown-header-table-of-contents)
+[Return to top](#markdown-header-natural-language-analysis-of-automatic-speech-recognition-for-psychotherapy)
 
 ### 5.1  Figure 1: Boxplot Comparison
 ![Figure 1 Boxplot](./doc/figure1.png) 
