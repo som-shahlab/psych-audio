@@ -4,11 +4,11 @@
 
 ## Table of Contents
 
-[1. Introduction](#introduction)
-[2. Data Preprocessing](#data-preprocessing)
-[3. Speech-to-Text with Google Cloud](#speech-to-text-with-google-cloud)
-[4. Evaluation](#evaluation)
-[5. Reproducing Our Tables and Figures](#reproducing-otables-and-figures)
+1. [Introduction](#1-introduction)
+2. [Data Preprocessing](#2-data-preprocessing)
+3. [Speech-to-Text with Google Cloud](#3-speech-to-text-with-google-cloud)
+4. [Evaluation](#4-evaluation)
+5. [Reproducing Our Tables and Figures](#5-reproducing-our-tables-and-figures)
 
 ## 1   Introduction
 
