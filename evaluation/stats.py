@@ -46,4 +46,8 @@ def difference_test(labels: List, arr0: np.ndarray, arr1: np.ndarray) -> Dict:
 
     print("Mann-Whitney U-test (Not Normally Distributed)")
     stat, pval = scipy.stats.mannwhitneyu(arr0, arr1)
+    # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mannwhitneyu.html
+    # Defaults to None, which results in a p-value half
+    # the size of the ‘two-sided’ p-value
+    pval *= 2
     print(f"\tu: {stat:.4f}\tP: {pval:.3e}")
