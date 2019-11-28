@@ -23,7 +23,7 @@ def main():
     model = api.load("word2vec-google-news-300")
 
     # Load the self-harm data.
-    print("Computing corpus-level results...")
+    print("Computing corpus-level results... (1-2 minutes)")
     harm_wers, harm_emds = compute_self_harm_metrics(model)
 
     # Load the corpus-level data.
