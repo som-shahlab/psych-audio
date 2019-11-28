@@ -43,11 +43,22 @@ def main():
     evaluation.util.print_metrics("Aggregate", harm_emds["All"])
     evaluation.util.print_metrics("Corpus", corpus_emds)
 
+    # Compute self-harm sentences vs corpus.
+    print("------ Self-Harm vs Corpus ------")
     evaluation.stats.difference_test(
         ["WER Self-Harm", "WER Corpus"], harm_wers["All"], corpus_wers
     )
     evaluation.stats.difference_test(
         ["EMD Self-Harm", "EMD Corpus"], harm_emds["All"], corpus_emds
+    )
+
+    print("------ Therapist Self-Harm vs Patient Self-Harm ------")
+    # Compute self-harm patient vs therapist.
+    evaluation.stats.difference_test(
+        ["WER Therapist", "WER Patient"], harm_wers["T"], harm_wers["P"]
+    )
+    evaluation.stats.difference_test(
+        ["EMD Therapist", "EMD Patient"], harm_emds["T"], harm_emds["P"]
     )
 
 
