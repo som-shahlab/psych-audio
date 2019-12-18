@@ -38,16 +38,18 @@ Below, we show the original (mp3/wma) specs of our data and the specs of our new
 * Sample Rate: 44,100 Hz -> 16,000 Hz
 * Channels: 2 (stereo) -> 1 (mono)
 
-First, open [preprocessing/01_generate_flac.py](preprocessing/01_generate_flac.py) and edit the global variables: `INPUT_DIR`, `OUTPUT_DIR`, and `ffmpeg`. Then, run:
+First, open [preproc/config.py](preproc/config.py) and edit the variables: `meta_fqn`, `gt_dir`, `raw_audio_dir`, `ffmpeg`, `malformed_files`, as appropriate. 
+<!--[preproc/01_generate_flac.py](preproc/01_generate_flac.py) and edit the global variables: `INPUT_DIR`, `OUTPUT_DIR`, and `ffmpeg`. -->
+Then, run:
 
 ```bash
-python preprocessing/01_generate_flac.py
+python preproc/01_generate_flac.py [OUTPUT_DIR]
 ```
 
-If running on NERO or other compute cluster, submit your job with Slurm (see [preprocessing/01_slurm.sh](preprocessing/01_slurm.sh)).:
+If running on NERO or other compute cluster, submit your job with Slurm (see [preproc/01_slurm.sh](preproc/01_slurm.sh)).:
 
 ```bash
-sbatch scripts/01_slurm.sh
+sbatch scripts/01_slurm.sh PYTHON_DIR=[/path/to/python] FLAC_SCRIPT=[/path/to/preproc/01_generate_flac.py] OUTPUT_DIR=[/desired/output/dir]
 squeue
 ```
 
@@ -123,7 +125,7 @@ data/
 │   ├── 399c9e27729c267ea14974421038444c1c90325212b99b2fead3f6990395358.json
 │   └── 6a6cba4540baeff375e0838e4080ab6c617835afea91dda6e29a4a67dbdcb1a.json
 │   ├── ...
-├── machine
+├── machine/
     ├── 399c9e27729c267ea14974421038444c1c90325212b99b2fead3f6990395358.json
     └── 6a6cba4540baeff375e0838e4080ab6c617835afea91dda6e29a4a67dbdcb1a.json
     ├── ...
@@ -131,7 +133,7 @@ data/
 
 ### 4.1 Paired JSON File
 
-To create the single JSON file, which we will called `paired.json` (because it creates a pair, consisting of a reference standard sentence and an ASR sentence), run:
+To create the single JSON file, which we will called `paired.json` (because it creates a pair, consisting of a reference standard sentence and an ASR sentence), first open [evaluation/config.py](evaluation/config.py) and edit the variables `META_FQN`, `PAIRED_FQN`, `TABLE2_FQN`, `TABLE3_FQN` as appropriate. (Others may also need to be adjusted in order to comply with your local directory structure). `PAIRED_FQN`, `TABLE2_FQN`, are `TABLE3_FQN` are destination folders for the outputs of our analysis and should not exist yet. Similarly, `WORD2VEC_MODEL_FQN` will be downloaded in the next section. All other files should point to existing files on your system. Then run:
 
 ```bash
 python evaluation/01_create_paired_json.py data/machine data/gt
@@ -205,7 +207,7 @@ The table values will be printed out to the command line.
 ```bash
 python evaluation/clinical_ngrams/table3.py
 ```
-The table values will be printed out to the command line.
+The table values will be written to the location specified by `TABLE3_FQN` in `evaluation/config.py`.
 
 ### 5.4 Table 4: Types of Errors
 ![Table 4 Errors](./doc/table4.png) 
@@ -213,4 +215,5 @@ The table values will be printed out to the command line.
 ```bash
 python evaluation/self_harm/find_examples.py
 ```
-The user will be shown several sentences for which the ASR made a mistake. The reference standard will be shown for comparison. The user must manually classify each error as a syntactic or semantic error, until a sufficient number of examples is found.
+The user will be shown several sentences for which the ASR made a mistake. The reference standard will be shown for comparison. 
+<!--The user must manually classify each error as a syntactic or semantic error, until a sufficient number of examples is found.-->
