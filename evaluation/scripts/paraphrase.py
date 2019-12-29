@@ -22,7 +22,7 @@ def main():
 
     # Baseline: Non-paraphrase sentences.
     # Create pairs of real sentences from PPDB and compute EMD.
-    N = 100000
+    N = 10000
     idxs = np.random.choice(len(examples), N * 2, replace=False)
     real_dists = []
     for i in range(N):
