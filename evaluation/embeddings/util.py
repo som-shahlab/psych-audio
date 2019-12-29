@@ -197,9 +197,13 @@ def load_glove(path: str) -> Dict[str, np.ndarray]:
 
 def print_metrics(arr: np.ndarray, text: str):
     """Prints various metrics for an array."""
+    if isinstance(arr, list):
+        arr = np.asarray(arr)
     print(f"------ {text} ------")
     print(f"Mean: {arr.mean():.4f}")
     print(f"Std: {arr.std():.4f}")
+    print(f"Range: {arr.min()} to {arr.max()}")
+    print(f"Median: {np.median(arr)}")
     print(f"n: {len(arr)}")
 
 
