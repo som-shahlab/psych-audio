@@ -36,15 +36,18 @@ def main():
     rand_dists, rand_wers = [], []
     rand_sentences = eeu.random_sentences(N * 5, use_corpus=False)
     idxs = np.random.choice(len(rand_sentences), N * 3, replace=False)
+    i = 0
     while len(rand_wers) < N:
-        s1 = rand_sentences[idxs[len(rand_wers)]].split(" ")
-        s2 = rand_sentences[idxs[len(rand_wers) + N]].split(" ")
+        s1 = rand_sentences[idxs[i]].split(" ")
+        s2 = rand_sentences[idxs[i + N]].split(" ")
+        wer = evaluation.util.word_error_rate(s1, s2)
         d = model.wmdistance(s1, s2)
         if math.isnan(d) or d <= 0 or math.isinf(d):
+            i += 1
             continue
         rand_dists.append(d)
-        wer = evaluation.util.word_error_rate(s1, s2)
         rand_wers.append(wer)
+        i += 1
 
     rand_wers = np.asarray(rand_wers) * 100
     eeu.print_metrics(rand_wers, "Random Words WER")
@@ -55,14 +58,18 @@ def main():
     idxs = np.random.choice(len(examples), N * 5, replace=False)
     real_dists = []
     real_wers = []
+    i = 0
     while len(real_wers) < N:
-        s1 = examples[idxs[len(real_wers)]][0].split(" ")
-        s2 = examples[idxs[len(real_wers) + N]][0].split(" ")
+        s1 = examples[idxs[i]][0].split(" ")
+        s2 = examples[idxs[i + N]][0].split(" ")
         d = model.wmdistance(s1, s2)
         if math.isnan(d) or d <= 0 or math.isinf(d):
+            i += 1
             continue
         real_dists.append(d)
         real_wers.append(evaluation.util.word_error_rate(s1, s2))
+        i += 1
+
     real_dists = np.asarray(real_dists)
     real_wers = np.asarray(real_wers) * 100
     eeu.print_metrics(real_dists, "PPDB Sentences EMD")
@@ -75,11 +82,11 @@ def main():
     i = 0
     for (p1, p2, _) in examples:
         p1, p2 = p1.split(" "), p2.split(" ")
-        paraphrase_wers.append(evaluation.util.word_error_rate(p1, p2))
         d = model.wmdistance(p1, p2)
         if math.isnan(d) or d <= 0 or math.isinf(d):
             continue
         paraphrase_dists.append(d)
+        paraphrase_wers.append(evaluation.util.word_error_rate(p1, p2))
         i += 1
         if i == N:
             break

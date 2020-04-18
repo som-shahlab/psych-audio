@@ -76,13 +76,13 @@ def main(args):
         axes[0].legend()
 
         # T-SNE plot.
-        print("Fitting T-SNE...")
-        model = TSNE(n_components=2)
-        X = model.fit_transform(A)
-        x, y = X[:, 0], X[:, 1]
-        axes[1].scatter(x, y, label="Sentence")
-        axes[1].legend()
-        axes[1].set_title("T-SNE of Embeddings")
+        # print("Fitting T-SNE...")
+        # model = TSNE(n_components=2)
+        # X = model.fit_transform(A)
+        # x, y = X[:, 0], X[:, 1]
+        # axes[1].scatter(x, y, label="Sentence")
+        # axes[1].legend()
+        # axes[1].set_title("T-SNE of Embeddings")
         # plt.scatter(x, y)
         plt.show()
 
