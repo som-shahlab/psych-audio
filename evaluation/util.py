@@ -7,6 +7,7 @@ import unidecode
 import Levenshtein
 from typing import *
 import evaluation.config as config
+import jiwer
 
 
 def load_paired_json(skip_empty=False):
@@ -44,6 +45,7 @@ def canonicalize(sentence: str) -> str:
 	"""
     sentence = sentence.lower().strip().replace("'", "")
     sentence = unidecode.unidecode(sentence)
+    sentence = sentence.strip()
     return sentence
 
 
@@ -56,6 +58,8 @@ def word_error_rate(pred: List[str], target: List[str]) -> float:
 	:param target: List of ground truth words.
 	:return:
 	"""
+    if not isinstance(pred, list) or not isinstance(target, list):
+        raise ValueError("word_error_rate: Arguments should be array of words")
     # build mapping of words to integers
     b = set(pred + target)
     word2char = dict(zip(b, range(len(b))))
