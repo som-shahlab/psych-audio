@@ -7,7 +7,6 @@ import unidecode
 import Levenshtein
 from typing import *
 import evaluation.config as config
-import jiwer
 
 
 def load_paired_json(skip_empty=False):
