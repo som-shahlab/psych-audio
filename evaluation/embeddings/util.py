@@ -24,7 +24,7 @@ def _random_sentence(vocab: List[str]) -> str:
 		sentence: Random sentence.
 	"""
     # Determine sentence length.
-    n_words = int(np.clip(np.random.normal(8, 2), 0, 15))
+    n_words = int(np.clip(np.random.lognormal(8, 3), 2, 15))
 
     # Select words.
     vocab_size = len(vocab)
@@ -138,10 +138,7 @@ def load_embedding_model(embedding_name: str) -> (Dict, Set[str]):
 
 
 def encode_from_dict(
-    embedding_name: str,
-    model: Dict[str, np.ndarray],
-    keys: Set[str],
-    sentence: str,
+    embedding_name: str, model: Dict[str, np.ndarray], keys: Set[str], sentence: str,
 ) -> Optional[np.ndarray]:
     """
 	Encodes a sentence using a dictionary-based embedding. That is, either word2vec or Glove.
@@ -200,18 +197,18 @@ def print_metrics(arr: np.ndarray, text: str):
     if isinstance(arr, list):
         arr = np.asarray(arr)
     print(f"------ {text} ------")
-    print(f"Mean: {arr.mean():.4f}")
-    print(f"Std: {arr.std():.4f}")
-    print(f"Range: {arr.min()} to {arr.max()}")
-    print(f"Median: {np.median(arr)}")
+    print(f"Mean: {arr.mean():.2f}")
+    print(f"Std: {arr.std():.2f}")
+    print(f"Range: {arr.min():.2f} to {arr.max():.2f}")
+    print(f"Median: {np.median(arr):.2f}")
     print(f"n: {len(arr)}")
+    print(
+        f"{arr.mean():.2f} ± {arr.std():.2f} ({np.median(arr):.2f}, [{arr.min():.2f}-{arr.max():.2f}], n: {len(arr)}"
+    )
 
 
 def plot_histogram(
-    fqn: str,
-    random_dists: np.ndarray,
-    corpus_dists: np.ndarray,
-    n_bins: int = 30,
+    fqn: str, random_dists: np.ndarray, corpus_dists: np.ndarray, n_bins: int = 30,
 ):
     """
 	Plots a histogram of the random and corpus distances.
@@ -234,20 +231,10 @@ def plot_histogram(
     # Create the histogram.
     _, axes = plt.subplots(1, 1, figsize=(16, 10))
     axes.hist(
-        random_dists,
-        bins=bins,
-        density=True,
-        facecolor="g",
-        alpha=0.6,
-        label="Random",
+        random_dists, bins=bins, density=True, facecolor="g", alpha=0.6, label="Random",
     )
     axes.hist(
-        corpus_dists,
-        bins=bins,
-        density=True,
-        facecolor="b",
-        alpha=0.6,
-        label="Corpus",
+        corpus_dists, bins=bins, density=True, facecolor="b", alpha=0.6, label="Corpus",
     )
     axes.set_xlabel("Distance")
     axes.set_ylabel("Probability")
