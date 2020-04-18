@@ -28,7 +28,7 @@ TABLE3_FQN = "/vol0/psych_audio/ahaque/psych-audio/results/table3.tsv"
 PHQ_TERM_FQN = "/vol0/psych_audio/ahaque/psych-audio/data/clinical-terms-v3.tsv"
 
 # Path to the vocabulary file of all possible words.
-VOCAB_FQN = "/vol0/psych_audio/ahaque/psych-audio/data/english.txt"
+VOCAB_FQN = "data/english.txt"
 
 # Which dimensions to analyze. That is, each item in the below list
 # will be a subsection of the table. i.e., Gender will be broken down into male/female (its unique values).
