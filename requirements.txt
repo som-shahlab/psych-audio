@@ -8,3 +8,4 @@ pandas>=0.24.2
 gensim>=3.7.2
 unidecode>=1.0.23
 pyemd>=0.5.1
+python-Levenshtein>=0.12

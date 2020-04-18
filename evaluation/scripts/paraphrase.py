@@ -11,14 +11,19 @@ import gensim.downloader
 import evaluation.util
 import evaluation.embeddings.util as eeu
 
+# http://paraphrase.org/#/download
+# Language: English
+# Options: All
+# Size: Small
 PPDB_FQN = "/home/ahaque/Git/psych-audio/ppdb/ppdb-2.0-s-all"
 
 
 def main():
-    print(f"Loading the model..")
+    # Takes 3-5 minutes, depending on internet speed.
+    print(f"Downloading word2vec model..")
     model = gensim.downloader.load("word2vec-google-news-300")
 
-    # Load the dataset.
+    # Load the dataset. Takes 30-45 seconds on the small dataset.
     print(f"Loading PPDB..")
     examples = load_ppdb()
 
@@ -37,8 +42,8 @@ def main():
         real_dists.append(d)
         real_wers.append(evaluation.util.word_error_rate(s1, s2))
     real_dists = np.asarray(real_dists)
-    eeu.print_metrics(real_dists, "Real Sentences EMD")
-    eeu.print_metrics(real_wers, "Real Sentences WER")
+    eeu.print_metrics(real_dists, "PPDB Sentences EMD")
+    eeu.print_metrics(real_wers, "PPDB Sentences WER")
 
     # Baseline: Paraphrase sentences.
     # Compute EMD between paraphrased sentences.
@@ -55,8 +60,8 @@ def main():
         if i == N:
             break
     paraphrase_dists = np.asarray(paraphrase_dists)
-    eeu.print_metrics(paraphrase_dists, "Paraphrases EMD")
-    eeu.print_metrics(paraphrase_wers, "Paraphrases WER")
+    eeu.print_metrics(paraphrase_dists, "PPDB Paraphrases EMD")
+    eeu.print_metrics(paraphrase_wers, "PPDB Paraphrases WER")
 
 
 def load_ppdb():
