@@ -9,7 +9,11 @@ import numpy as np
 from tqdm import tqdm
 import gensim.downloader
 import evaluation.util
+import evaluation.stats
+import evaluation.config
+import preproc.util
 import evaluation.embeddings.util as eeu
+from typing import *
 
 # http://paraphrase.org/#/download
 # Language: English
@@ -27,21 +31,40 @@ def main():
     print(f"Loading PPDB..")
     examples = load_ppdb()
 
-    # Baseline: Non-paraphrase sentences.
-    # Create pairs of real sentences from PPDB and compute EMD.
+    # Baseline: Random words.
     N = 10000
-    idxs = np.random.choice(len(examples), N * 2, replace=False)
+    rand_dists, rand_wers = [], []
+    rand_sentences = eeu.random_sentences(N * 5, use_corpus=False)
+    idxs = np.random.choice(len(rand_sentences), N * 3, replace=False)
+    while len(rand_wers) < N:
+        s1 = rand_sentences[idxs[len(rand_wers)]].split(" ")
+        s2 = rand_sentences[idxs[len(rand_wers) + N]].split(" ")
+        d = model.wmdistance(s1, s2)
+        if math.isnan(d) or d <= 0 or math.isinf(d):
+            continue
+        rand_dists.append(d)
+        wer = evaluation.util.word_error_rate(s1, s2)
+        rand_wers.append(wer)
+
+    rand_wers = np.asarray(rand_wers) * 100
+    eeu.print_metrics(rand_wers, "Random Words WER")
+    eeu.print_metrics(rand_dists, "Random Words EMD")
+
+    # Baseline: Random sentences.
+    # Create pairs of real sentences from PPDB and compute EMD.
+    idxs = np.random.choice(len(examples), N * 5, replace=False)
     real_dists = []
     real_wers = []
-    for i in range(N):
-        s1 = examples[idxs[i]][0]
-        s2 = examples[idxs[i + N]][0]
-        d = model.wmdistance(s1.split(" "), s2.split(" "))
+    while len(real_wers) < N:
+        s1 = examples[idxs[len(real_wers)]][0].split(" ")
+        s2 = examples[idxs[len(real_wers) + N]][0].split(" ")
+        d = model.wmdistance(s1, s2)
         if math.isnan(d) or d <= 0 or math.isinf(d):
             continue
         real_dists.append(d)
         real_wers.append(evaluation.util.word_error_rate(s1, s2))
     real_dists = np.asarray(real_dists)
+    real_wers = np.asarray(real_wers) * 100
     eeu.print_metrics(real_dists, "PPDB Sentences EMD")
     eeu.print_metrics(real_wers, "PPDB Sentences WER")
 
@@ -50,9 +73,10 @@ def main():
     paraphrase_dists = []
     paraphrase_wers = []
     i = 0
-    for (p1, p2, score) in examples:
+    for (p1, p2, _) in examples:
+        p1, p2 = p1.split(" "), p2.split(" ")
         paraphrase_wers.append(evaluation.util.word_error_rate(p1, p2))
-        d = model.wmdistance(p1.split(" "), p2.split(" "))
+        d = model.wmdistance(p1, p2)
         if math.isnan(d) or d <= 0 or math.isinf(d):
             continue
         paraphrase_dists.append(d)
@@ -60,13 +84,14 @@ def main():
         if i == N:
             break
     paraphrase_dists = np.asarray(paraphrase_dists)
+    paraphrase_wers = np.asarray(paraphrase_wers) * 100
     eeu.print_metrics(paraphrase_dists, "PPDB Paraphrases EMD")
     eeu.print_metrics(paraphrase_wers, "PPDB Paraphrases WER")
 
 
 def load_ppdb():
     examples = []
-    pbar = tqdm(total=4551746)
+    pbar = tqdm(total=4551746)  # Small dataset: 4551746
     with open(PPDB_FQN, "r") as f:
         line = f.readline()
         while line is not None and "|||" in line:
