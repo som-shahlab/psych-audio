@@ -72,8 +72,8 @@ def main():
 
     real_dists = np.asarray(real_dists)
     real_wers = np.asarray(real_wers) * 100
-    eeu.print_metrics(real_dists, "PPDB Sentences EMD")
-    eeu.print_metrics(real_wers, "PPDB Sentences WER")
+    eeu.print_metrics(real_dists, "Random Sentences EMD")
+    eeu.print_metrics(real_wers, "Random Sentences WER")
 
     # Baseline: Paraphrase sentences.
     # Compute EMD between paraphrased sentences.

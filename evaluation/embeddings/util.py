@@ -203,7 +203,7 @@ def print_metrics(arr: np.ndarray, text: str):
     print(f"Median: {np.median(arr):.2f}")
     print(f"n: {len(arr)}")
     print(
-        f"{arr.mean():.2f} ± {arr.std():.2f} ({np.median(arr):.2f}, [{arr.min():.2f}-{arr.max():.2f}]), n: {len(arr)}"
+        f"{arr.mean():.2f} ± {arr.std():.2f} ({np.median(arr):.2f} [{arr.min():.2f}-{arr.max():.2f}]), n: {len(arr)}"
     )
 
 
