@@ -8,9 +8,10 @@ import math
 import numpy as np
 from tqdm import tqdm
 import gensim.downloader
+import evaluation.util
 import evaluation.embeddings.util as eeu
 
-PPDB_FQN = "/Users/ahaque/Desktop/ppdb-2.0-s-all"
+PPDB_FQN = "/home/ahaque/Git/psych-audio/ppdb/ppdb-2.0-s-all"
 
 
 def main():
@@ -18,6 +19,7 @@ def main():
     model = gensim.downloader.load("word2vec-google-news-300")
 
     # Load the dataset.
+    print(f"Loading PPDB..")
     examples = load_ppdb()
 
     # Baseline: Non-paraphrase sentences.
@@ -25,6 +27,7 @@ def main():
     N = 10000
     idxs = np.random.choice(len(examples), N * 2, replace=False)
     real_dists = []
+    real_wers = []
     for i in range(N):
         s1 = examples[idxs[i]][0]
         s2 = examples[idxs[i + N]][0]
@@ -32,14 +35,18 @@ def main():
         if math.isnan(d) or d <= 0 or math.isinf(d):
             continue
         real_dists.append(d)
+        real_wers.append(evaluation.util.word_error_rate(s1, s2))
     real_dists = np.asarray(real_dists)
-    eeu.print_metrics(real_dists, "Real Sentences")
+    eeu.print_metrics(real_dists, "Real Sentences EMD")
+    eeu.print_metrics(real_wers, "Real Sentences WER")
 
     # Baseline: Paraphrase sentences.
     # Compute EMD between paraphrased sentences.
     paraphrase_dists = []
+    paraphrase_wers = []
     i = 0
     for (p1, p2, score) in examples:
+        paraphrase_wers.append(evaluation.util.word_error_rate(p1, p2))
         d = model.wmdistance(p1.split(" "), p2.split(" "))
         if math.isnan(d) or d <= 0 or math.isinf(d):
             continue
@@ -48,7 +55,8 @@ def main():
         if i == N:
             break
     paraphrase_dists = np.asarray(paraphrase_dists)
-    eeu.print_metrics(paraphrase_dists, "Paraphrases")
+    eeu.print_metrics(paraphrase_dists, "Paraphrases EMD")
+    eeu.print_metrics(paraphrase_wers, "Paraphrases WER")
 
 
 def load_ppdb():
