@@ -207,11 +207,11 @@ def statistical_tests(out_fqn: str, arr1: np.ndarray, arr2: np.ndarray, labels):
     # Compute t-test/p-values.
     statistic1, pvalue1 = scipy.stats.shapiro(arr1)
     statistic2, pvalue2 = scipy.stats.shapiro(arr2)
-    print(f"Shapiro-Wilk: Arr1: Statistic: {statistic1:.4f}\tP-Value: {pvalue1:.4f}")
-    print(f"Shapiro-Wilk: Arr2: Statistic: {statistic2:.4f}\tP-Value: {pvalue2:.4f}")
+    print(f">>> Shapiro-Wilk: {labels[0]} Stat: {statistic1:.4f}\tP: {pvalue1:.4f}")
+    print(f">>> Shapiro-Wilk: {labels[1]} Stat: {statistic2:.4f}\tP: {pvalue2:.4f}")
 
-    stat, pval = scipy.stats.mannwhitneyu(arr1, arr2)
-    print(f"Mann-Whitney: Statistic: {stat:.4f}\tP-Value: {pval:.4f}")
+    # stat, pval = scipy.stats.mannwhitneyu(arr1, arr2)
+    # print(f"Mann-Whitney: Statistic: {stat:.4f}\tP-Value: {pval:.4f}")
 
 
 def save_qq(fqn: str, arr: np.ndarray):
@@ -241,7 +241,7 @@ def save_qq(fqn: str, arr: np.ndarray):
         scatter_kws=scatter_options,
         problabel="Percentile",
     )
-    ax.legend(loc="lower right")
+    # ax.legend(loc="lower right")
     # ax.set_ylim(bottom=-2, top=4)
     seaborn.despine(fig)
     plt.savefig(fqn, pad_inches=0, bbox_inches="tight")
