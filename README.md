@@ -215,5 +215,39 @@ The table values will be written to the location specified by `TABLE3_FQN` in `e
 ```bash
 python evaluation/self_harm/find_examples.py
 ```
-The user will be shown several sentences for which the ASR made a mistake. The reference standard will be shown for comparison. 
-<!--The user must manually classify each error as a syntactic or semantic error, until a sufficient number of examples is found.-->
+The user will be shown several sentences for which the ASR made a mistake. The reference standard will be shown for comparison. The user must manually classify each error as a syntactic or semantic error, until a sufficient number of examples is found.
+
+### 5.5 Supplementary Table 2
+![Supplementary Table 2 Paraphrase](./doc/sup_table2.png)
+
+```bash
+python evaluation/scripts/paraphrase.py
+```
+Before running this script, the user must download the PPDB English Small dataset from the PPDB website.
+
+### 5.6 Supplementary Table 3
+![Supplementary Table 3 PHQ](./doc/sup_table3.png)
+
+See instructions for Table 3.
+
+
+### 5.7 Supplementary Figure 1
+![Supplementary Figure 1 Distances](./doc/sup_figure1.png)
+
+First, embeddings must be extracted from random and corpus sentences. Second, distances must be computed between each sentence. These distances are stored in npy files to simplify the figure generation process.
+```bash
+python evaluation/embeddings/06_corpus_dists.py --metric euclidean --source random --n 1000 --output_dir results/
+```
+
+Next, generate the plots.
+```bash
+python evaluation/figures/dist_comparison.py
+```
+
+### 5.8 Supplementary Figure 2
+![Supplementary Figure 2 Q-Q Plot](./doc/sup_figure2.png)
+
+```bash
+python evaluation/figures/histograms.py
+```
+This script will create 20 Q-Q plots, saved as eps files.
