@@ -27,6 +27,12 @@ def dual_hist(metric: str, arr1: np.ndarray, arr2: np.ndarray, n_bins=50):
     step = (global_max - global_min) / n_bins
     bins = np.arange(global_min, global_max, int(np.ceil(step))).astype(np.int64)
 
+    count1, bin1 = np.histogram(arr1, bins)
+    count2, bin2 = np.histogram(arr2, bins)
+    count1 = count1 / count1.sum()
+    count2 = count2 / count2.sum()
+    print(metric, count1.max(), count2.max())
+
     use_log = False
     plt.figure(figsize=(12, 12))
     # gs1 = gridspec.GridSpec(1, 2)
