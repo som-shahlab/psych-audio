@@ -42,7 +42,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--metric", choices=["euclidean", "cosine", "emd", "mahalanobis"],
+        "--metric", choices=["euclidean", "cosine", "emd"],
     )
     parser.add_argument("--source", choices=["corpus", "random"])
     parser.add_argument("--output_dir", type=str, required=True)
