@@ -19,7 +19,7 @@ from typing import *
 # Language: English
 # Options: All
 # Size: Small
-PPDB_FQN = "/home/ahaque/Git/psych-audio/ppdb/ppdb-2.0-s-all"
+PPDB_FQN = "/ppdb/ppdb-2.0-s-all"
 
 
 def main():
