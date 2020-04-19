@@ -1,7 +1,7 @@
 from typing import Dict
 
 # Path to Google's pre-trained word2vec model (.bin file)
-WORD2VEC_MODEL_FQN: str = "/vol0/psych_audio/ahaque/models/word2vec/GoogleNews-vectors-negative300.bin"
+WORD2VEC_MODEL_FQN: str = "/home/ahaque/Desktop/GoogleNews-vectors-negative300.bin"
 
 # Path to Stanford's pre-trained GloVe model (.txt file)
 GLOVE_MODEL_FQN: str = "/vol0/psych_audio/ahaque/models/glove/glove.840B.300d.txt"
