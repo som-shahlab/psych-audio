@@ -6,6 +6,7 @@ It also shows the perfect and random performance.
 """
 import os
 import sys
+import probscale
 import numpy as np
 import pandas as pd
 from typing import *
@@ -13,6 +14,8 @@ import scipy.stats
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 from matplotlib.ticker import FormatStrFormatter
+from matplotlib import pyplot
+import seaborn
 import evaluation.config
 
 METRICS = ["WER", "BLEU", "COSINE", "EMD"]
@@ -88,13 +91,7 @@ def create_aggregate_plot(df: pd.DataFrame):
         rand_perf = df[f"RAND_{metric}"].values.mean()
         out_fqn = os.path.join("results", f"hist_aggregate_{metric}.png")
         create_dual_hist(
-            metric,
-            out_fqn,
-            data,
-            data,
-            rand_perf,
-            perfect_perf,
-            labels=["", ""],
+            metric, out_fqn, data, data, rand_perf, perfect_perf, labels=["", ""],
         )
         print(out_fqn)
 
@@ -157,42 +154,22 @@ def create_dual_hist(
     axes[2].set(xlabel=X_AXIS_LABEL[metric], ylabel="Frequency")
     axes[2].set_yticklabels(["{:,.0%}".format(x) for x in axes[2].get_yticks()])
     if metric in ["WER", "BLEU"]:
-        axes[2].set_xticklabels(
-            ["{:,.0%}".format(x) for x in axes[2].get_xticks()]
-        )
+        axes[2].set_xticklabels(["{:,.0%}".format(x) for x in axes[2].get_xticks()])
     else:
-        axes[2].set_xticklabels(
-            ["{:,.1f}".format(x) for x in axes[2].get_xticks()]
-        )
+        axes[2].set_xticklabels(["{:,.1f}".format(x) for x in axes[2].get_xticks()])
 
     # Add vertial lines/bounds.
     axes[0].vlines(
-        x=perfect_perf,
-        ymin=0,
-        ymax=axes0_max * 0.8,
-        linestyles="dashed",
-        color="k",
+        x=perfect_perf, ymin=0, ymax=axes0_max * 0.8, linestyles="dashed", color="k",
     )
     axes[0].vlines(
-        x=rand_perf,
-        ymin=0,
-        ymax=axes0_max * 0.8,
-        linestyles="dashed",
-        color="k",
+        x=rand_perf, ymin=0, ymax=axes0_max * 0.8, linestyles="dashed", color="k",
     )
     axes[1].vlines(
-        x=perfect_perf,
-        ymin=0,
-        ymax=axes1_max * 0.8,
-        linestyles="dashed",
-        color="k",
+        x=perfect_perf, ymin=0, ymax=axes1_max * 0.8, linestyles="dashed", color="k",
     )
     axes[1].vlines(
-        x=rand_perf,
-        ymin=0,
-        ymax=axes1_max * 0.8,
-        linestyles="dashed",
-        color="k",
+        x=rand_perf, ymin=0, ymax=axes1_max * 0.8, linestyles="dashed", color="k",
     )
     axes[2].vlines(
         x=perfect_perf,
@@ -222,45 +199,59 @@ def statistical_tests(out_fqn: str, arr1: np.ndarray, arr2: np.ndarray, labels):
         arr1: Array 1 for comparison.
         arr2: Array 2 for comparison.
     """
-    qq_fqn = out_fqn.replace("hist_", "qq_")
-    fig, axes = plt.subplots(
-        # figsize=(width, height)
-        nrows=1,
-        ncols=2,
-        figsize=(16, 7),
-        sharex="col",
-        gridspec_kw={"width_ratios": [1, 1]},
-    )
+    qq_fqn = out_fqn.replace("hist_", "qq_").replace(".png", ".eps")
 
     # Plot the Q-Q plot.
-    scipy.stats.probplot(arr1, plot=axes[0])
-    scipy.stats.probplot(arr2, plot=axes[1])
-    axes[0].get_lines()[0].set_markerfacecolor("r")
-    axes[0].get_lines()[0].set_marker("o")
-    axes[0].get_lines()[0].set_markerfacecolor("C0")
-    axes[0].set(title=labels[0])
-    axes[1].set(title=labels[1])
-    axes[1].get_lines()[0].set_markerfacecolor(DARKBLUE)
+    (osm, osr), (slope, intercept, r) = scipy.stats.probplot(arr1)
+    # plt.scatter(osm, osr, c="#000000", s=90, marker="+")
+    # plt.plot(osm, osm * slope + intercept, c="#999999")
+    # plt.show()
+
+    scatter_options = dict(
+        marker="+",
+        markersize=15,
+        markerfacecolor="none",
+        markeredgecolor="black",
+        markeredgewidth=1.25,
+        linestyle="none",
+        zorder=5,
+        label="Observations",
+    )
+
+    line_options = dict(
+        color="#6184ff", linewidth=3, zorder=1, label="Best Fit", alpha=1
+    )
+
+    fig, ax = pyplot.subplots(figsize=(8, 8))
+    fig = probscale.probplot(
+        arr1,
+        ax=ax,
+        plottype="pp",
+        bestfit=True,
+        estimate_ci=True,
+        line_kws=line_options,
+        scatter_kws=scatter_options,
+        problabel="Percentile",
+    )
+    ax.legend(loc="lower right")
+    # ax.set_ylim(bottom=-2, top=4)
+    seaborn.despine(fig)
+    plt.savefig(qq_fqn, pad_inches=0, bbox_inches="tight")
 
     # Compute t-test/p-values.
     statistic1, pvalue1 = scipy.stats.shapiro(arr1)
     statistic2, pvalue2 = scipy.stats.shapiro(arr2)
-    print(
-        f"Shapiro-Wilk: Arr1: Statistic: {statistic1:.4f}\tP-Value: {pvalue1:.4f}"
-    )
-    print(
-        f"Shapiro-Wilk: Arr2: Statistic: {statistic2:.4f}\tP-Value: {pvalue2:.4f}"
-    )
+    print(f"Shapiro-Wilk: Arr1: Statistic: {statistic1:.4f}\tP-Value: {pvalue1:.4f}")
+    print(f"Shapiro-Wilk: Arr2: Statistic: {statistic2:.4f}\tP-Value: {pvalue2:.4f}")
 
     stat, pval = scipy.stats.mannwhitneyu(arr1, arr2)
     print(f"Mann-Whitney: Statistic: {stat:.4f}\tP-Value: {pval:.4f}")
     plt.savefig(qq_fqn, pad_inches=0, bbox_inches="tight")
     print(qq_fqn)
+    sys.exit(0)
 
 
-def fit_normal_line(
-    arr: np.ndarray, n_bins: int, max_val
-) -> (np.ndarray, np.ndarray):
+def fit_normal_line(arr: np.ndarray, n_bins: int, max_val) -> (np.ndarray, np.ndarray):
     """
     Fits a normal distribution to the histogram.
     
@@ -275,9 +266,7 @@ def fit_normal_line(
     """
     mu, sigma = arr.mean(), arr.std()
     x = np.arange(0, max_val, 0.01)
-    y = (1 / (np.sqrt(2 * np.pi) * sigma)) * np.exp(
-        -0.5 * (1 / sigma * (x - mu)) ** 2
-    )
+    y = (1 / (np.sqrt(2 * np.pi) * sigma)) * np.exp(-0.5 * (1 / sigma * (x - mu)) ** 2)
     y = y / y.sum()
 
     return x, y
