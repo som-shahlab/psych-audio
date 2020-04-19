@@ -16,9 +16,7 @@ METRICS = ["WER", "EMD"]
 def main():
     table2 = pd.read_csv(evaluation.config.TABLE2_FQN, sep="\t")
     # Create the accumulator for all data.
-    data = {
-        x: {"key": [], "values": [], "group": [], "lr": []} for x in METRICS
-    }
+    data = {x: {"key": [], "values": [], "group": [], "lr": []} for x in METRICS}
 
     # Load the overall metrics.
     hashes = set(table2["hash"])
@@ -75,30 +73,20 @@ def plot(metric: str, data: pd.DataFrame):
 
     # Plot the histogram.
     sns.set(style="ticks", palette="pastel")
-    fig, ax = plt.subplots(1, 1, figsize=(30, 30))
+    fig, ax = plt.subplots(1, 1, figsize=(10, 5))
     sns.catplot(
         data=df,
-        x="lr",
-        y="values",
+        y="lr",
+        x="values",
         col="group",
         kind="box",
-        aspect=0.4,
-        palette=sns.color_palette("Blues", n_colors=2),
+        orient="h",
+        height=2,
+        aspect=4,
+        palette=sns.color_palette(["#88C3E7"], n_colors=1),
     )
-    # ax.set_xlabel("")
     sns.despine(offset=10, trim=True)
-    plt.savefig(f"boxplot_{metric}.png", dpi=300)
-    # ax.set(ylim=(0, 0.8))
-
-    # Violin plot.
-    # plt.clf()
-    # sns.set(style="whitegrid")
-    # ax = sns.violinplot(
-    #     x="group", y="values", hue="lr", data=df, palette="muted", split=True
-    # )
-    # ax.set(ylim=(0, 0.8))
-    # sns.despine(offset=10, trim=True)
-    # plt.savefig("violin.png")
+    plt.savefig(f"results/boxplot_{metric}.eps")
 
 
 if __name__ == "__main__":
