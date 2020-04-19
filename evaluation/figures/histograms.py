@@ -186,7 +186,7 @@ def create_dual_hist(
         color="k",
     )
 
-    plt.savefig(out_fqn, bbox_inches="tight")
+    # plt.savefig(out_fqn, bbox_inches="tight")
     statistical_tests(out_fqn, arr1, arr2, labels)
 
 
@@ -199,14 +199,22 @@ def statistical_tests(out_fqn: str, arr1: np.ndarray, arr2: np.ndarray, labels):
         arr1: Array 1 for comparison.
         arr2: Array 2 for comparison.
     """
-    qq_fqn = out_fqn.replace("hist_", "qq_").replace(".png", ".eps")
-
     # Plot the Q-Q plot.
-    (osm, osr), (slope, intercept, r) = scipy.stats.probplot(arr1)
-    # plt.scatter(osm, osr, c="#000000", s=90, marker="+")
-    # plt.plot(osm, osm * slope + intercept, c="#999999")
-    # plt.show()
+    save_qq(out_fqn.replace(".png", f"_{labels[0]}.eps"), arr1)
+    if labels[1] != "":
+        save_qq(out_fqn.replace(".png", f"_{labels[1]}.eps"), arr2)
 
+    # Compute t-test/p-values.
+    statistic1, pvalue1 = scipy.stats.shapiro(arr1)
+    statistic2, pvalue2 = scipy.stats.shapiro(arr2)
+    print(f"Shapiro-Wilk: Arr1: Statistic: {statistic1:.4f}\tP-Value: {pvalue1:.4f}")
+    print(f"Shapiro-Wilk: Arr2: Statistic: {statistic2:.4f}\tP-Value: {pvalue2:.4f}")
+
+    stat, pval = scipy.stats.mannwhitneyu(arr1, arr2)
+    print(f"Mann-Whitney: Statistic: {stat:.4f}\tP-Value: {pval:.4f}")
+
+
+def save_qq(fqn: str, arr: np.ndarray):
     scatter_options = dict(
         marker="+",
         markersize=15,
@@ -224,7 +232,7 @@ def statistical_tests(out_fqn: str, arr1: np.ndarray, arr2: np.ndarray, labels):
 
     fig, ax = pyplot.subplots(figsize=(8, 8))
     fig = probscale.probplot(
-        arr1,
+        arr,
         ax=ax,
         plottype="pp",
         bestfit=True,
@@ -236,19 +244,7 @@ def statistical_tests(out_fqn: str, arr1: np.ndarray, arr2: np.ndarray, labels):
     ax.legend(loc="lower right")
     # ax.set_ylim(bottom=-2, top=4)
     seaborn.despine(fig)
-    plt.savefig(qq_fqn, pad_inches=0, bbox_inches="tight")
-
-    # Compute t-test/p-values.
-    statistic1, pvalue1 = scipy.stats.shapiro(arr1)
-    statistic2, pvalue2 = scipy.stats.shapiro(arr2)
-    print(f"Shapiro-Wilk: Arr1: Statistic: {statistic1:.4f}\tP-Value: {pvalue1:.4f}")
-    print(f"Shapiro-Wilk: Arr2: Statistic: {statistic2:.4f}\tP-Value: {pvalue2:.4f}")
-
-    stat, pval = scipy.stats.mannwhitneyu(arr1, arr2)
-    print(f"Mann-Whitney: Statistic: {stat:.4f}\tP-Value: {pval:.4f}")
-    plt.savefig(qq_fqn, pad_inches=0, bbox_inches="tight")
-    print(qq_fqn)
-    sys.exit(0)
+    plt.savefig(fqn, pad_inches=0, bbox_inches="tight")
 
 
 def fit_normal_line(arr: np.ndarray, n_bins: int, max_val) -> (np.ndarray, np.ndarray):
