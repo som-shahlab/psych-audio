@@ -117,7 +117,7 @@ def compute_self_harm_metrics(model):
         pred = " ".join(pred)
 
         # Compute WER.
-        wer = evaluation.util.word_error_rate(pred, gt)
+        wer = evaluation.util.word_error_rate(pred.split(" "), gt.split(" "))
         wers[speaker].append(wer)
         wers["All"].append(wer)
 
