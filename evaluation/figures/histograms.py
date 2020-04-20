@@ -40,8 +40,9 @@ def main():
     for metric in METRICS:
         print(f"------ Gender: {metric} ------")
         perfect_perf = 1 if metric == "BLEU" else 0
-        male = df[df["gender"] == "Male"][metric].values
-        female = df[df["gender"] == "Female"][metric].values
+        # We only have gender label for the patient.
+        male = df[(df["gender"] == "Male") & (df["speaker"] == "P")][metric].values
+        female = df[(df["gender"] == "Female") & (df["speaker"] == "P")][metric].values
         rand_perf = df[f"RAND_{metric}"].values.mean()
         out_fqn = os.path.join("results", f"hist_gender_{metric}.png")
         create_dual_hist(
@@ -207,11 +208,13 @@ def statistical_tests(out_fqn: str, arr1: np.ndarray, arr2: np.ndarray, labels):
     # Compute t-test/p-values.
     statistic1, pvalue1 = scipy.stats.shapiro(arr1)
     statistic2, pvalue2 = scipy.stats.shapiro(arr2)
-    print(f">>> Shapiro-Wilk: {labels[0]} Stat: {statistic1:.4f}\tP: {pvalue1:.4f}")
+    print(f">>> {labels[1]}: mean: {arr2.mean():.4f}")
+    print(f">>> {labels[0]}: mean: {arr1.mean():.4f}")
     print(f">>> Shapiro-Wilk: {labels[1]} Stat: {statistic2:.4f}\tP: {pvalue2:.4f}")
+    print(f">>> Shapiro-Wilk: {labels[0]} Stat: {statistic1:.4f}\tP: {pvalue1:.4f}")
 
-    # stat, pval = scipy.stats.mannwhitneyu(arr1, arr2)
-    # print(f"Mann-Whitney: Statistic: {stat:.4f}\tP-Value: {pval:.4f}")
+    stat, pval = scipy.stats.mannwhitneyu(arr1, arr2, alternative="two-sided")
+    print(f">>> Mann-Whitney: Statistic: {stat:.4f}\tP-Value: {pval:.4f}")
 
 
 def save_qq(fqn: str, arr: np.ndarray):
