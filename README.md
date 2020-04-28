@@ -49,10 +49,10 @@ Then, run:
 python preproc/01_generate_flac.py [OUTPUT_DIR]
 ```
 
-If running on NERO or other compute cluster, submit your job with Slurm (see [preproc/01_slurm.sh](preproc/01_slurm.sh)).:
+If running a compute cluster, submit your job with Slurm (see [preproc/01_slurm.sh](preproc/01_slurm.sh)).:
 
 ```bash
-sbatch scripts/01_slurm.sh PYTHON_DIR=[/path/to/python] FLAC_SCRIPT=[/path/to/preproc/01_generate_flac.py] OUTPUT_DIR=[/desired/output/dir]
+sbatch preproc/01_slurm.sh PYTHON_DIR=[/path/to/python] FLAC_SCRIPT=[/path/to/preproc/01_generate_flac.py] OUTPUT_DIR=[/desired/output/dir]
 squeue
 ```
 
