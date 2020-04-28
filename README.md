@@ -181,7 +181,7 @@ This table will be used to generate subgroup-level (i.e., gender, speaker, etc.)
 [Return to top](#markdown-header-natural-language-analysis-of-automatic-speech-recognition-for-psychotherapy)
 
 ### 5.1  Figure 1: Boxplot Comparison
-![Figure 1 Boxplot](./doc/figure1.png) 
+![Figure 1 Boxplot](./doc/figure1.jpg) 
 
 Boxplot Figure 1 requires the CSV file from Section 4.2 to be completed.
 
