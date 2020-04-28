@@ -19,6 +19,9 @@
 
 Accurate transcription of audio recordings in psychotherapy would improve therapy effectiveness, clinician training, and safety monitoring. Although automatic speech recognition software is commercially available, its accuracy in mental health settings has not been well described. It is unclear which metrics and thresholds are appropriate for different clinical use cases, which may range from population descriptions to individual safety monitoring. Here we show that automatic speech recognition is feasible in psychotherapy, but further improvements in accuracy are needed before widespread use. Our HIPAA-compliant automatic speech recognition system demonstrated a transcription word error rate of 25%. For depression related utterances, sensitivity was 80% and positive predictive value was 83%. For clinician-identified harm-related sentences, the word error rate was 34%. These results suggest that automatic speech recognition may support understanding of language patterns and subgroup variation in existing treatments but may not be ready for individual-level safety surveillance.
 
+Acknowledgements
+A.S.M. was supported by grants from the National Institutes of Health, National Center for Advancing Translational Science, Clinical and Translational Science Award (KL2TR001083 and UL1TR001085), the Stanford Department of Psychiatry Innovator Grant Program, and the Stanford Human-Centered AI Institute. S.L.F. was supported by a Big Data to Knowledge (BD2K) grant from the National Institutes of Health (T32 LM012409). The content is solely the responsibility of the authors and does not necessarily represent the official views of the National Institutes of Health.
+
 ## 2. Data Preprocessing
 
 [Return to top](#markdown-header-natural-language-analysis-of-automatic-speech-recognition-for-psychotherapy)
