@@ -2,7 +2,7 @@
 
 ![Banner Image](doc/banner.png)
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://tldrlegal.com/license/mit-license)
 [![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://www.python.org/downloads/release/python-376/)
 
 ## Table of Contents
@@ -17,7 +17,7 @@
 
 [Return to top](#markdown-header-natural-language-analysis-of-automatic-speech-recognition-for-psychotherapy)
 
-Accurate transcription of audio recordings in psychotherapy would improve therapy effectiveness, clinician training, and safety monitoring. Although automatic speech recognition software (ASR) is commercially available, its accuracy in mental health settings has not been well described. It is unclear which metrics and thresholds are appropriate for different clinical use cases, which may range from population descriptions to individual safety monitoring. In this work, we develop a framework for evaluating success and failure modes of automatic speech recognition systems in psychotherapy.
+Accurate transcription of audio recordings in psychotherapy would improve therapy effectiveness, clinician training, and safety monitoring. Although automatic speech recognition software is commercially available, its accuracy in mental health settings has not been well described. It is unclear which metrics and thresholds are appropriate for different clinical use cases, which may range from population descriptions to individual safety monitoring. Here we show that automatic speech recognition is feasible in psychotherapy, but further improvements in accuracy are needed before widespread use. Our HIPAA-compliant automatic speech recognition system demonstrated a transcription word error rate of 25%. For depression related utterances, sensitivity was 80% and positive predictive value was 83%. For clinician-identified harm-related sentences, the word error rate was 34%. These results suggest that automatic speech recognition may support understanding of language patterns and subgroup variation in existing treatments but may not be ready for individual-level safety surveillance.
 
 ## 2. Data Preprocessing
 
