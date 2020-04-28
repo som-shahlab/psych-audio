@@ -189,7 +189,7 @@ Boxplot Figure 1 requires the CSV file from Section 4.2 to be completed.
 python evaluation/figures/fig1_boxplot.py
 ```
 
-The figure will be saved to a PNG file.
+The figure will be saved as an EPS (vector) file. We did post-processing in Adobe Illustrator.
 
 ### 5.2 Table 2: Aggregate Statistics
 ![Table 2 Aggregate](./doc/table2.png) 
