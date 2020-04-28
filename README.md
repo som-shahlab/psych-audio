@@ -1,4 +1,4 @@
-# Natural Language Analysis of Automatic Speech Recognition for Psychotherapy
+# Assessing the Accuracy of Automatic Speech Recognition for Psychotherapy 
 
 ![Banner Image](doc/banner.png)
 
