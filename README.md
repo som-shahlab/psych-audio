@@ -1,13 +1,12 @@
 # Assessing the Accuracy of Automatic Speech Recognition for Psychotherapy 
 
-![Banner Image](doc/banner.png)
+![Banner Image](doc/banner.jpg)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://tldrlegal.com/license/mit-license)
 [![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://www.python.org/downloads/release/python-376/)
 
 ## Table of Contents
 
-0. [Citation](#0-citation)
 1. [Introduction](#markdown-header-1-introduction)
 2. [Data Preprocessing](#markdown-header-2-data-preprocessing)
 3. [Automatic Speech Recognition](#markdown-header-3-automatic-speech-recognition)
@@ -165,7 +164,7 @@ Notice how we have the ground truth reference standard, ASR prediction, speaker 
 
 We compute semantic and syntactic similarity metrics. This equates to Earth Mover's Distance (EMD) and word error rate (WER), respectively. Extracting embeddings is time consuming. Therefore, we first extract embeddings, save them to disk, then compute similarity metrics on these saved embeddings.
 
-Download the published Word2Vec model: [[Google Drive](https://drive.google.com/file/d/0B7XkCwpI5KDYNlNUTTlSS21pQmM/edit)] [[website](https://code.google.com/archive/p/word2vec/)] (1.5 GB)
+Download the published Word2Vec model: [[website](https://code.google.com/archive/p/word2vec/)] (1.5 GB)
 
 Once downloaded, uncompress the file: `gunzip GoogleNews-vectors-negative300.bin.gz` Take note of the location of the .bin file and update the `WORD2VEC_MODEL_FQN` variable inside `evaluation/config.py`.
 
@@ -189,7 +188,7 @@ This table will be used to generate subgroup-level (i.e., gender, speaker, etc.)
 
 [Return to top](#markdown-header-natural-language-analysis-of-automatic-speech-recognition-for-psychotherapy)
 
-### 5.1  Figure 1: Boxplot Comparison
+### Figure 1: Boxplot Comparison
 ![Figure 1 Boxplot](./doc/figure1.jpg) 
 
 Boxplot Figure 1 requires the CSV file from Section 4.2 to be completed.
@@ -200,8 +199,8 @@ python evaluation/figures/fig1_boxplot.py
 
 The figure will be saved as an EPS (vector) file. We did post-processing in Adobe Illustrator.
 
-### 5.2 Table 2: Aggregate Statistics
-![Table 2 Aggregate](./doc/table2.png) 
+### Table 2: Aggregate Statistics
+![Table 2 Aggregate](./doc/table2.jpg) 
 
 Table 2 requires the CSV file from Section 4.2 to be completed.
 
@@ -210,38 +209,43 @@ python evaluation/03_statistical_analysis.py
 ```
 The table values will be printed out to the command line.
 
-### 5.3 Table 3: PHQ Keyword Performance
-![Table 3 PHQ](./doc/table3.png) 
+### Table 3: PHQ Keyword Performance
+![Table 3 PHQ](./doc/table3.jpg) 
 
 ```bash
 python evaluation/clinical_ngrams/table3.py
 ```
 The table values will be written to the location specified by `TABLE3_FQN` in `evaluation/config.py`.
 
-### 5.4 Table 4: Types of Errors
-![Table 4 Errors](./doc/table4.png) 
+### Table 4: Types of Errors
+![Table 4 Errors](./doc/table4.jpg) 
 
 ```bash
 python evaluation/self_harm/find_examples.py
 ```
 The user will be shown several sentences for which the ASR made a mistake. The reference standard will be shown for comparison. The user must manually classify each error as a syntactic or semantic error, until a sufficient number of examples is found.
 
-### 5.5 Supplementary Table 2
-![Supplementary Table 2 Paraphrase](./doc/sup_table2.png)
+### Supplementary Table 1: Random vs Paraphrase vs ASR Examples
+![Supplementary Table 1 Examples](./doc/sup_table1.jpg)
+
+There is no code for Supplementary Table 1. We manually searched through sentence pairs in our dataset.
+
+### Supplementary Table 2: Random vs Paraphrase vs ASR Performance
+![Supplementary Table 2 Paraphrase](./doc/sup_table2.jpg)
 
 ```bash
 python evaluation/scripts/paraphrase.py
 ```
-Before running this script, the user must download the PPDB English Small dataset from the PPDB website.
+Before running this script, the user must download the PPDB English Small dataset from the [PPDB website](http://paraphrase.org).
 
-### 5.6 Supplementary Table 3
-![Supplementary Table 3 PHQ](./doc/sup_table3.png)
+### Supplementary Table 3: Word-Level ASR Metrics
+![Supplementary Table 3 PHQ](./doc/sup_table3.jpg)
 
 See instructions for Table 3.
 
 
-### 5.7 Supplementary Figure 1
-![Supplementary Figure 1 Distances](./doc/sup_figure1.png)
+### Supplementary Figure 1: Comparison of Distance Metrics
+![Supplementary Figure 1 Distances](./doc/sup_figure1.jpg)
 
 First, embeddings must be extracted from random and corpus sentences. Second, distances must be computed between each sentence. These distances are stored in npy files to simplify the figure generation process.
 ```bash
@@ -253,8 +257,8 @@ Next, generate the plots.
 python evaluation/figures/dist_comparison.py
 ```
 
-### 5.8 Supplementary Figure 2
-![Supplementary Figure 2 Q-Q Plot](./doc/sup_figure2.png)
+### Supplementary Figure 2: Q-Q Plots
+![Supplementary Figure 2 Q-Q Plot](./doc/sup_figure2.jpg)
 
 ```bash
 python evaluation/figures/histograms.py
@@ -264,10 +268,10 @@ This script will create 20 Q-Q plots, saved as eps files.
 ## 6. Citation
 [Return to top](#assessing-the-accuracy-of-automatic-speech-recognition-for-psychotherapy)
 
-Miner AS, Haque A, Fries JA, Fleming SL, Wilfley DE, Wilson GT, Milstein A, Jurafsky D, Agras WS, L Fei-Fei, Shah NH. Assessing the accuracy of automatic speech recognition for psychotherapy. npj Digital Medicine TODO, TODO (2020)
+Miner AS, Haque A, Fries JA, Fleming SL, Wilfley DE, Wilson GT, Milstein A, Jurafsky D, Agras WS, L Fei-Fei, Shah NH. Assessing the accuracy of automatic speech recognition for psychotherapy. *npj Digital Medicine* **TODO**, TODO (2020)
 
 ```
-@article{TODO,
+@article{miner2020assessing,
   title={Assessing the accuracy of automatic speech recognition for psychotherapy},
   author={Adam S Miner and Albert Haque and Jason A Fries and Scott L Fleming and Denise E Wilfley and G Terence Wilson and Arnold Milstein and Dan Jurafsky and Bruce A Arnow and W Stewart Agras and Li Fei-Fei and Nigam H Shah},
   journal={npj Digital Medicine},
