@@ -293,7 +293,7 @@ Miner AS, Haque A, Fries JA, Fleming SL, Wilfley DE, Wilson GT, Milstein A, Jura
 ```text
 @article{miner2020assessing,
   title={Assessing the accuracy of automatic speech recognition for psychotherapy},
-  author={Adam S Miner and Albert Haque and Jason A Fries and Scott L Fleming and Denise E Wilfley and G Terence Wilson and Arnold Milstein and Dan Jurafsky and Bruce A Arnow and W Stewart Agras and Li Fei-Fei and Nigam H Shah},
+  author={Adam S. Miner and Albert Haque and Jason A. Fries and Scott L. Fleming and Denise E. Wilfley and G. Terence Wilson and Arnold Milstein and Dan Jurafsky and Bruce A. Arnow and W. Stewart Agras and Li Fei-Fei and Nigam H. Shah},
   journal={npj Digital Medicine},
   volume={3},
   number={TODO},
