@@ -3,45 +3,48 @@
 ![Banner Image](doc/banner.jpg)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://tldrlegal.com/license/mit-license)
-[![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://www.python.org/downloads/release/python-376/)
+[![Python 3.7](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-383)
 
 ## Table of Contents
 
-1. [Introduction](#markdown-header-1-introduction)
-2. [Data Preprocessing](#markdown-header-2-data-preprocessing)
-3. [Automatic Speech Recognition](#markdown-header-3-automatic-speech-recognition)
-4. [Evaluation](#markdown-header-4-evaluation)
-5. [Reproducing Our Tables and Figures](#markdown-header-5-reproducing-our-tables-and-figures)
+1. [Introduction](#1-introduction)
+2. [Data Preprocessing](#2-data-preprocessing)
+3. [Automatic Speech Recognition](#3-automatic-speech-recognition)
+4. [Evaluation](#4-evaluation)
+5. [Reproducing Our Tables and Figures](#5-reproducing-our-tables-and-figures)
 6. [Citation](#6-citation)
 
 ## 1. Introduction
 
-[Return to top](#markdown-header-natural-language-analysis-of-automatic-speech-recognition-for-psychotherapy)
+[Return to top](#assessing-the-accuracy-of-automatic-speech-recognition-for-psychotherapy)
 
 ### 1.1 Abstract
+
 Accurate transcription of audio recordings in psychotherapy would improve therapy effectiveness, clinician training, and safety monitoring. Although automatic speech recognition software is commercially available, its accuracy in mental health settings has not been well described. It is unclear which metrics and thresholds are appropriate for different clinical use cases, which may range from population descriptions to individual safety monitoring. Here we show that automatic speech recognition is feasible in psychotherapy, but further improvements in accuracy are needed before widespread use. Our HIPAA-compliant automatic speech recognition system demonstrated a transcription word error rate of 25%. For depression related utterances, sensitivity was 80% and positive predictive value was 83%. For clinician-identified harm-related sentences, the word error rate was 34%. These results suggest that automatic speech recognition may support understanding of language patterns and subgroup variation in existing treatments but may not be ready for individual-level safety surveillance.
 
 ### 1.2 Acknowledgements
+
 Adam was supported by grants from the National Institutes of Health, National Center for Advancing Translational Science, Clinical and Translational Science Award (KL2TR001083 and UL1TR001085), the Stanford Department of Psychiatry Innovator Grant Program, and the Stanford Human-Centered AI Institute. Scott was supported by a Big Data to Knowledge (BD2K) grant from the National Institutes of Health (T32 LM012409). The content is solely the responsibility of the authors and does not necessarily represent the official views of the National Institutes of Health.
 
 ## 2. Data Preprocessing
 
-[Return to top](#markdown-header-natural-language-analysis-of-automatic-speech-recognition-for-psychotherapy)
+[Return to top](#assessing-the-accuracy-of-automatic-speech-recognition-for-psychotherapy)
 
 ### 2.1   Prerequisites
- [FFmpeg](https://www.ffmpeg.org/) contains various audio/visual encoding and decoding formats. To install FFmpeg:
 
-  1. (Recommended) Download a static binary and place in home dir: https://johnvansickle.com/ffmpeg/
-  2. Compile from source: https://www.ffmpeg.org/
+ [FFmpeg](https://www.ffmpeg.org) contains various audio/visual encoding and decoding formats. To install FFmpeg:
+
+  1. (Recommended) Download a static binary and place in home dir: [https://johnvansickle.com/ffmpeg](https://johnvansickle.com/ffmpeg)
+  2. Compile from source: [https://www.ffmpeg.org](https://www.ffmpeg.org)
 
 Your FFmpeg binary can be entirely in user-space (i.e., you do not need sudo).
-
 
 ### 2.2 Generating FLAC Files
 
 In its raw form, our current audio files are in either WMA (windows media audio) or MP3 format. As [recommended by Google Cloud](https://cloud.google.com/speech-to-text/docs/best-practices), we convert our files to [FLAC](https://en.wikipedia.org/wiki/FLAC). In general, you should try to use FLAC for all your audio processing tasks. The MP3 format loses data during the compression process. While this is okay for human hearing (MP3 minimizes human perceptual data loss), it may lose important information for machine hearing tasks.
 
 Below, we show the original (mp3/wma) specs of our data and the specs of our new FLAC files.  Most of these settings are [recommended](https://cloud.google.com/speech-to-text/docs/best-practices) by Google.
+
 * Format: MP3/WMA -> FLAC
 * Sample Rate: 44,100 Hz -> 16,000 Hz
 * Channels: 2 (stereo) -> 1 (mono)
@@ -78,15 +81,17 @@ where `OUTPUT_DIR` is the target location to place the new, ground truth JSON fi
 
 ## 3. Automatic Speech Recognition
 
-[Return to top](#markdown-header-natural-language-analysis-of-automatic-speech-recognition-for-psychotherapy)
+[Return to top](#assessing-the-accuracy-of-automatic-speech-recognition-for-psychotherapy)
 
 ### 3.1 Prerequisites
+
 First, enter your GCloud key and bucket information in [gcloud/config.py](gcloud/config.py).
 
 - **Google Cloud API Key**. This should be a *service account*. The key should have permissions to Google Cloud storage and Google Speech-to-Text API. Easiest but not-security-recommended solution would grant the service account with *Project Owner* status/permissions.
 - **Bucket Name**. This bucket should already exist. Our script will not create a bucket. The files will be uploaded to this bucket.
 
 Second, install the python dependencies.
+
 ```bash
 pip install -r requirements.txt
 ```
@@ -94,12 +99,14 @@ pip install -r requirements.txt
 ### 3.2 Upload to Google Cloud
 
 Once the audio files have been cleaned and standardized, we now upload the files to Google Cloud. We have two options:
+
 1. We send the audio file to Google for each transcription request. Nothing will reside long-term on GCloud.
 2. Before transcription, we upload all audio files to GCloud as a one-time operation. These files may sit there for a while. The transcription script will point to these files.
 
 Option 2 is better than Option 1. Specifically, when we wish to tweak our transcription algorithm or model. With option 2, we do not need to continually re-upload (temporarily) each audio file.
 
 To upload the files, see [gcloud/01_upload.py](gcloud/01_upload.py). Run it with the following command:
+
 ```bash
 python gcloud/01_upload.py DATA_DIR
 ```
@@ -118,7 +125,7 @@ where `OUTPUT_DIR` is your desired *local* folder where to store the json transc
 
 ## 4. Evaluation
 
-[Return to top](#markdown-header-natural-language-analysis-of-automatic-speech-recognition-for-psychotherapy)
+[Return to top](#assessing-the-accuracy-of-automatic-speech-recognition-for-psychotherapy)
 
 Before we begin evaluation, we first combine Google Cloud ASR outputs with the human generated reference standard. The goal is to have a single JSON file which contains both the ASR output and reference transcriptions. This will make it very easy to compute metrics.
 
@@ -186,10 +193,11 @@ This table will be used to generate subgroup-level (i.e., gender, speaker, etc.)
 
 ## 5. Reproducing Our Tables and Figures
 
-[Return to top](#markdown-header-natural-language-analysis-of-automatic-speech-recognition-for-psychotherapy)
+[Return to top](#assessing-the-accuracy-of-automatic-speech-recognition-for-psychotherapy)
 
 ### Figure 1: Boxplot Comparison
-![Figure 1 Boxplot](./doc/figure1.jpg) 
+
+![Figure 1 Boxplot](./doc/figure1.jpg)
 
 Boxplot Figure 1 requires the CSV file from Section 4.2 to be completed.
 
@@ -200,42 +208,51 @@ python evaluation/figures/fig1_boxplot.py
 The figure will be saved as an EPS (vector) file. We did post-processing in Adobe Illustrator.
 
 ### Table 2: Aggregate Statistics
-![Table 2 Aggregate](./doc/table2.jpg) 
+
+![Table 2 Aggregate](./doc/table2.jpg)
 
 Table 2 requires the CSV file from Section 4.2 to be completed.
 
 ```bash
 python evaluation/03_statistical_analysis.py
 ```
+
 The table values will be printed out to the command line.
 
 ### Table 3: PHQ Keyword Performance
-![Table 3 PHQ](./doc/table3.jpg) 
+
+![Table 3 PHQ](./doc/table3.jpg)
 
 ```bash
 python evaluation/clinical_ngrams/table3.py
 ```
+
 The table values will be written to the location specified by `TABLE3_FQN` in `evaluation/config.py`.
 
 ### Table 4: Types of Errors
-![Table 4 Errors](./doc/table4.jpg) 
+
+![Table 4 Errors](./doc/table4.jpg)
 
 ```bash
 python evaluation/self_harm/find_examples.py
 ```
+
 The user will be shown several sentences for which the ASR made a mistake. The reference standard will be shown for comparison. The user must manually classify each error as a syntactic or semantic error, until a sufficient number of examples is found.
 
 ### Supplementary Table 1: Random vs Paraphrase vs ASR Examples
+
 ![Supplementary Table 1 Examples](./doc/sup_table1.jpg)
 
 There is no code for Supplementary Table 1. We manually searched through sentence pairs in our dataset.
 
 ### Supplementary Table 2: Random vs Paraphrase vs ASR Performance
+
 ![Supplementary Table 2 Paraphrase](./doc/sup_table2.jpg)
 
 ```bash
 python evaluation/scripts/paraphrase.py
 ```
+
 Before running this script, the user must download the PPDB English Small dataset from the [PPDB website](http://paraphrase.org).
 
 ### Supplementary Table 3: Word-Level ASR Metrics
@@ -243,16 +260,17 @@ Before running this script, the user must download the PPDB English Small datase
 
 See instructions for Table 3.
 
-
 ### Supplementary Figure 1: Comparison of Distance Metrics
 ![Supplementary Figure 1 Distances](./doc/sup_figure1.jpg)
 
 First, embeddings must be extracted from random and corpus sentences. Second, distances must be computed between each sentence. These distances are stored in npy files to simplify the figure generation process.
+
 ```bash
 python evaluation/embeddings/06_corpus_dists.py --metric euclidean --source random --n 1000 --output_dir results/
 ```
 
 Next, generate the plots.
+
 ```bash
 python evaluation/figures/dist_comparison.py
 ```
@@ -263,14 +281,16 @@ python evaluation/figures/dist_comparison.py
 ```bash
 python evaluation/figures/histograms.py
 ```
+
 This script will create 20 Q-Q plots, saved as eps files.
 
 ## 6. Citation
+
 [Return to top](#assessing-the-accuracy-of-automatic-speech-recognition-for-psychotherapy)
 
 Miner AS, Haque A, Fries JA, Fleming SL, Wilfley DE, Wilson GT, Milstein A, Jurafsky D, Agras WS, L Fei-Fei, Shah NH. Assessing the accuracy of automatic speech recognition for psychotherapy. *npj Digital Medicine* **TODO**, TODO (2020)
 
-```
+```text
 @article{miner2020assessing,
   title={Assessing the accuracy of automatic speech recognition for psychotherapy},
   author={Adam S Miner and Albert Haque and Jason A Fries and Scott L Fleming and Denise E Wilfley and G Terence Wilson and Arnold Milstein and Dan Jurafsky and Bruce A Arnow and W Stewart Agras and Li Fei-Fei and Nigam H Shah},
