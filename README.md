@@ -7,20 +7,23 @@
 
 ## Table of Contents
 
+0. [Citation](#0-citation)
 1. [Introduction](#markdown-header-1-introduction)
 2. [Data Preprocessing](#markdown-header-2-data-preprocessing)
 3. [Automatic Speech Recognition](#markdown-header-3-automatic-speech-recognition)
 4. [Evaluation](#markdown-header-4-evaluation)
 5. [Reproducing Our Tables and Figures](#markdown-header-5-reproducing-our-tables-and-figures)
+6. [Citation](#6-citation)
 
 ## 1. Introduction
 
 [Return to top](#markdown-header-natural-language-analysis-of-automatic-speech-recognition-for-psychotherapy)
 
+### 1.1 Abstract
 Accurate transcription of audio recordings in psychotherapy would improve therapy effectiveness, clinician training, and safety monitoring. Although automatic speech recognition software is commercially available, its accuracy in mental health settings has not been well described. It is unclear which metrics and thresholds are appropriate for different clinical use cases, which may range from population descriptions to individual safety monitoring. Here we show that automatic speech recognition is feasible in psychotherapy, but further improvements in accuracy are needed before widespread use. Our HIPAA-compliant automatic speech recognition system demonstrated a transcription word error rate of 25%. For depression related utterances, sensitivity was 80% and positive predictive value was 83%. For clinician-identified harm-related sentences, the word error rate was 34%. These results suggest that automatic speech recognition may support understanding of language patterns and subgroup variation in existing treatments but may not be ready for individual-level safety surveillance.
 
-Acknowledgements
-A.S.M. was supported by grants from the National Institutes of Health, National Center for Advancing Translational Science, Clinical and Translational Science Award (KL2TR001083 and UL1TR001085), the Stanford Department of Psychiatry Innovator Grant Program, and the Stanford Human-Centered AI Institute. S.L.F. was supported by a Big Data to Knowledge (BD2K) grant from the National Institutes of Health (T32 LM012409). The content is solely the responsibility of the authors and does not necessarily represent the official views of the National Institutes of Health.
+### 1.2 Acknowledgements
+Adam was supported by grants from the National Institutes of Health, National Center for Advancing Translational Science, Clinical and Translational Science Award (KL2TR001083 and UL1TR001085), the Stanford Department of Psychiatry Innovator Grant Program, and the Stanford Human-Centered AI Institute. Scott was supported by a Big Data to Knowledge (BD2K) grant from the National Institutes of Health (T32 LM012409). The content is solely the responsibility of the authors and does not necessarily represent the official views of the National Institutes of Health.
 
 ## 2. Data Preprocessing
 
@@ -174,11 +177,11 @@ python evaluation/02_compute_metrics.py
 
 The above command takes between 10 and 30 minutes to complete. It is multi-threaded by default. The bottleneck is computing word emebddings since this requires loading a very large English vocabulary. The resulting file will be a CSV file, similar to below:
 
-| hash                | speaker | WER  | BLEU | COSINE | EMD  | 
-|---------------------|---------|------|------|--------|------| 
-| 9c267ea1cb2fead3f95 | T       | 0.38 | 0.85 | 0.28   | 1.57 | 
-| 9c267ea1cb2fead3f95 | P       | 0.23 | 0.81 | 0.11   | 0.95 | 
-| ... | ... | ... | ... | ... | ... |
+| hash                | speaker | WER  | BLEU | COSINE | EMD  |
+| ------------------- | ------- | ---- | ---- | ------ | ---- |
+| 9c267ea1cb2fead3f95 | T       | 0.38 | 0.85 | 0.28   | 1.57 |
+| 9c267ea1cb2fead3f95 | P       | 0.23 | 0.81 | 0.11   | 0.95 |
+| ...                 | ...     | ...  | ...  | ...    | ...  |
 
 This table will be used to generate subgroup-level (i.e., gender, speaker, etc.) results and overall ASR performance.
 
@@ -257,3 +260,21 @@ python evaluation/figures/dist_comparison.py
 python evaluation/figures/histograms.py
 ```
 This script will create 20 Q-Q plots, saved as eps files.
+
+## 6. Citation
+[Return to top](#assessing-the-accuracy-of-automatic-speech-recognition-for-psychotherapy)
+
+Miner AS, Haque A, Fries JA, Fleming SL, Wilfley DE, Wilson GT, Milstein A, Jurafsky D, Agras WS, L Fei-Fei, Shah NH. Assessing the accuracy of automatic speech recognition for psychotherapy. npj Digital Medicine TODO, TODO (2020)
+
+```
+@article{TODO,
+  title={Assessing the accuracy of automatic speech recognition for psychotherapy},
+  author={Adam S Miner and Albert Haque and Jason A Fries and Scott L Fleming and Denise E Wilfley and G Terence Wilson and Arnold Milstein and Dan Jurafsky and Bruce A Arnow and W Stewart Agras and Li Fei-Fei and Nigam H Shah},
+  journal={npj Digital Medicine},
+  volume={TODO},
+  number={TODO},
+  pages={TODO},
+  year={2020},
+  publisher={Nature Publishing Group}
+}
+```
