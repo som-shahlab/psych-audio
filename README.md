@@ -291,7 +291,7 @@ This script will create 20 Q-Q plots, saved as eps files.
 
 [Return to top](#assessing-the-accuracy-of-automatic-speech-recognition-for-psychotherapy)
 
-Miner AS, Haque A, Fries JA, Fleming SL, Wilfley DE, Wilson GT, Milstein A, Jurafsky D, Agras WS, L Fei-Fei, Shah NH. Assessing the accuracy of automatic speech recognition for psychotherapy. *npj Digital Medicine* **3** (2020) [doi:10.1038/s41746-020-0285-8](https://doi.org/10.1038/s41746-020-0285-8)
+Miner AS, Haque A, Fries JA, Fleming SL, Wilfley DE, Wilson GT, Milstein A, Jurafsky D, Agras WS, L Fei-Fei, Shah NH. Assessing the accuracy of automatic speech recognition for psychotherapy. *npj Digital Medicine* **3**, 82 (2020) [doi:10.1038/s41746-020-0285-8](https://doi.org/10.1038/s41746-020-0285-8)
 
 ```text
 @article{miner2020assessing,
@@ -299,6 +299,7 @@ Miner AS, Haque A, Fries JA, Fleming SL, Wilfley DE, Wilson GT, Milstein A, Jura
   author={Adam S. Miner and Albert Haque and Jason A. Fries and Scott L. Fleming and Denise E. Wilfley and G. Terence Wilson and Arnold Milstein and Dan Jurafsky and Bruce A. Arnow and W. Stewart Agras and Li Fei-Fei and Nigam H. Shah},
   journal={npj Digital Medicine},
   volume={3},
+  pages={82},
   year={2020},
   doi={10.1038/s41746-020-0285-8},
   publisher={Nature Publishing Group}
